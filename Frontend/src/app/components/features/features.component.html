@@ -1,0 +1,45 @@
+<section id="features" class="devpilot-features">
+  <div class="dp-container">
+    <div class="devpilot-features__intro">
+      <h2 class="devpilot-features__title">Your entire development workflow. One platform.</h2>
+    </div>
+
+    <div class="devpilot-features__grid">
+      @for (feature of features; track feature.title) {
+        <article class="devpilot-features__card dp-glass">
+          <span class="devpilot-features__icon">{{ feature.icon }}</span>
+          <h3 class="devpilot-features__card-title">{{ feature.title }}</h3>
+          <p class="devpilot-features__card-desc">{{ feature.description }}</p>
+
+          @if (feature.title === 'Integrated Code Editor') {
+            <div class="devpilot-features__editor-preview">
+              <div class="devpilot-features__editor-tabs">
+                <span class="is-active">app.component.ts</span>
+                <span>app.routes.ts</span>
+              </div>
+              <div class="devpilot-features__editor-code">
+                <span class="ln">1</span><span class="tok-kw">import</span> &#123; Component &#125;<br />
+                <span class="ln">2</span><span class="tok-kw">export class</span> <span class="tok-fn">App</span> &#123; &#125;
+              </div>
+              <div class="devpilot-features__editor-terminal">$ devpilot run</div>
+            </div>
+          } @else if (feature.title === 'Deployment') {
+            <div class="devpilot-features__deploy-flow">
+              <span>Build</span>
+              <span class="arrow">→</span>
+              <span>Deploy</span>
+              <span class="arrow">→</span>
+              <span class="is-live">Live</span>
+            </div>
+          } @else {
+            <ul class="devpilot-features__points">
+              @for (point of feature.points; track point) {
+                <li>{{ point }}</li>
+              }
+            </ul>
+          }
+        </article>
+      }
+    </div>
+  </div>
+</section>

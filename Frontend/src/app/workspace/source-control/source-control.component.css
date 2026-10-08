@@ -1,0 +1,192 @@
+:host {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+}
+
+.devpilot-sc {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.devpilot-sc__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 6px;
+  flex-shrink: 0;
+}
+
+.devpilot-sc__title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dp-text-tertiary);
+}
+
+.devpilot-sc__header-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.devpilot-sc__hbtn {
+  background: none;
+  border: none;
+  color: var(--dp-text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: all var(--dp-transition-fast);
+}
+.devpilot-sc__hbtn:hover { background: var(--dp-surface-strong); color: var(--dp-text-primary); }
+
+.devpilot-sc__branch {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dp-text-secondary);
+}
+
+.devpilot-sc__ahead {
+  color: var(--dp-accent-green);
+  font-size: 10px;
+}
+
+.devpilot-sc__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 12px;
+  min-height: 0;
+}
+
+.devpilot-sc__commit-box {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--dp-surface-border);
+}
+
+.devpilot-sc__commit-input {
+  width: 100%;
+  background: var(--dp-surface);
+  border: 1px solid var(--dp-surface-border);
+  border-radius: var(--dp-radius-xs);
+  color: var(--dp-text-primary);
+  font-family: var(--dp-font-body);
+  font-size: 12px;
+  padding: 7px 10px;
+  resize: none;
+  outline: none;
+  transition: border-color var(--dp-transition-fast);
+}
+.devpilot-sc__commit-input:focus { border-color: var(--dp-accent); }
+
+.devpilot-sc__commit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.devpilot-sc__commit-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: var(--dp-radius-xs);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: var(--dp-accent);
+  color: #fff;
+  transition: opacity var(--dp-transition-fast);
+}
+.devpilot-sc__commit-btn:hover { opacity: 0.88; }
+.devpilot-sc__commit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.devpilot-sc__push-btn {
+  padding: 7px 12px;
+  border-radius: var(--dp-radius-xs);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--dp-surface-border);
+  background: var(--dp-surface-strong);
+  color: var(--dp-text-secondary);
+  transition: all var(--dp-transition-fast);
+}
+.devpilot-sc__push-btn:hover { color: var(--dp-text-primary); border-color: var(--dp-accent); }
+.devpilot-sc__push-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.devpilot-sc__section { padding: 8px 0; }
+
+.devpilot-sc__section-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dp-text-tertiary);
+  padding: 4px 12px 6px;
+}
+
+.devpilot-sc__empty {
+  font-size: 11px;
+  color: var(--dp-text-tertiary);
+  padding: 4px 12px;
+  font-style: italic;
+}
+
+.devpilot-sc__change {
+  display: flex;
+  align-items: center;
+  padding: 4px 10px;
+  gap: 6px;
+  transition: background var(--dp-transition-fast);
+  cursor: pointer;
+}
+.devpilot-sc__change:hover { background: var(--dp-surface); }
+
+.devpilot-sc__change-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--dp-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.devpilot-sc__change-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.devpilot-sc__badge {
+  font-size: 10px;
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+  border-radius: 2px;
+  padding: 1px 2px;
+}
+.devpilot-sc__badge--modified { color: var(--dp-accent-yellow); }
+.devpilot-sc__badge--added { color: var(--dp-accent-green); }
+.devpilot-sc__badge--deleted { color: var(--dp-accent-red); }
+
+.devpilot-sc__change-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--dp-text-tertiary);
+  font-size: 14px;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color var(--dp-transition-fast);
+}
+.devpilot-sc__change-btn:hover { color: var(--dp-text-primary); }

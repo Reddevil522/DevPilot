@@ -1,0 +1,54 @@
+<div class="dp-workspace-root">
+  <!-- Top Navbar -->
+  <app-top-navbar
+    (toggleSidebar)="toggleSidebar()"
+    (searchOpened)="openCommandPalette()"
+  ></app-top-navbar>
+
+  <!-- IDE Body -->
+  <div class="devpilot-workspace__body">
+    <!-- Activity Bar -->
+    <app-activity-bar
+      [activeItem]="activeActivity()"
+      (activityChange)="onActivityChange($event)"
+    ></app-activity-bar>
+
+    <!-- Sidebar -->
+    <div
+      class="devpilot-workspace__sidebar"
+      [class.devpilot-workspace__sidebar--hidden]="!sidebarVisible()"
+    >
+      @switch (activeActivity()) {
+        @case ('explorer') {
+          <app-explorer></app-explorer>
+        }
+        @case ('source-control') {
+          <app-source-control></app-source-control>
+        }
+        @default {
+          <div class="devpilot-workspace__sidebar-placeholder">
+            <span class="devpilot-workspace__sidebar-placeholder-text">
+              {{ activeActivity() | titlecase }}
+            </span>
+            <p>Coming soon</p>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Main Content -->
+    <main class="devpilot-workspace__main">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+
+
+  <!-- Command Palette Overlay -->
+  @if (commandPaletteOpen()) {
+    <app-command-palette (closed)="closeCommandPalette()"></app-command-palette>
+  }
+
+  <!-- Global Toast -->
+  <app-toast></app-toast>
+</div>

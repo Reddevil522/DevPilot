@@ -1,0 +1,63 @@
+<header class="devpilot-navbar dp-glass">
+  <div class="devpilot-navbar__inner">
+    <a class="devpilot-navbar__brand" routerLink="/" (click)="closeMenu()">
+      <dp-logo [size]="26"></dp-logo>
+    </a>
+
+    <nav class="devpilot-navbar__links" aria-label="Primary">
+      @for (link of links; track link.fragment) {
+        <a
+          class="devpilot-navbar__link"
+          routerLink="/"
+          [fragment]="link.fragment"
+          (click)="closeMenu()"
+        >
+          {{ link.label }}
+        </a>
+      }
+    </nav>
+
+    <div class="devpilot-navbar__actions">
+      <button
+        type="button"
+        class="devpilot-navbar__theme"
+        (click)="theme.toggle()"
+        [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+      >
+        @if (theme.theme() === 'dark') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.5 1.5M18.3 18.3l1.5 1.5M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.5-1.5M18.3 5.7l1.5-1.5"/></svg>
+        } @else {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.2A8.2 8.2 0 1 1 9.8 4a6.6 6.6 0 0 0 10.2 10.2z"/></svg>
+        }
+      </button>
+
+      <a routerLink="/login" class="devpilot-navbar__login">Login</a>
+      <a routerLink="/register" class="devpilot-navbar__cta">Get Started</a>
+
+      <button
+        type="button"
+        class="devpilot-navbar__burger"
+        (click)="toggleMenu()"
+        [attr.aria-expanded]="isMenuOpen()"
+        aria-label="Toggle navigation menu"
+        aria-controls="devpilot-mobile-menu"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </div>
+
+  @if (isMenuOpen()) {
+    <nav id="devpilot-mobile-menu" class="devpilot-navbar__mobile" aria-label="Mobile">
+      @for (link of links; track link.fragment) {
+        <a routerLink="/" [fragment]="link.fragment" (click)="closeMenu()">{{ link.label }}</a>
+      }
+      <div class="devpilot-navbar__mobile-actions">
+        <a routerLink="/login" (click)="closeMenu()" class="devpilot-navbar__login">Login</a>
+        <a routerLink="/register" (click)="closeMenu()" class="devpilot-navbar__cta">Get Started</a>
+      </div>
+    </nav>
+  }
+</header>

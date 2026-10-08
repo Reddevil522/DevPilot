@@ -1,0 +1,69 @@
+<div class="devpilot-editor">
+  <!-- Tab Bar -->
+  <div class="devpilot-editor__tabs dp-scroll" style="overflow-y:hidden; overflow-x:auto;">
+    @for (tab of tabs(); track tab.name) {
+      <div
+        class="devpilot-editor__tab"
+        [class.devpilot-editor__tab--active]="tab.active"
+        (click)="selectTab(tab)"
+      >
+        <span class="devpilot-editor__tab-icon"><lucide-icon [name]="getFileIcon(tab.extension)" [size]="14"></lucide-icon></span>
+        <span class="devpilot-editor__tab-name">{{ tab.name }}</span>
+        @if (tab.dirty) {
+          <span class="devpilot-editor__tab-dirty" title="Unsaved changes">●</span>
+        }
+        <button class="devpilot-editor__tab-close" (click)="closeTab(tab, $event)" title="Close"><lucide-icon name="x" [size]="12"></lucide-icon></button>
+      </div>
+    }
+  </div>
+
+  <!-- Breadcrumb -->
+  @if (tabs().length > 0) {
+    <div class="devpilot-editor__breadcrumb">
+      <span class="devpilot-editor__breadcrumb-item">{{ projectName }}</span>
+      <span class="devpilot-editor__breadcrumb-sep">›</span>
+      <span class="devpilot-editor__breadcrumb-item">src</span>
+      <span class="devpilot-editor__breadcrumb-sep">›</span>
+      <span class="devpilot-editor__breadcrumb-item devpilot-editor__breadcrumb-item--active">{{ activeTab()?.path }}</span>
+    </div>
+  }
+
+  <!-- Editor content -->
+  @if (activeTab()) {
+    <div class="devpilot-editor__content">
+      <ngx-monaco-editor 
+        [options]="editorOptions" 
+        [ngModel]="activeTab()?.content"
+        (ngModelChange)="onContentChange($event)"
+        style="height: 100%; width: 100%;">
+      </ngx-monaco-editor>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (tabs().length === 0) {
+    <div class="devpilot-editor__empty">
+      <div class="devpilot-editor__empty-logo"><lucide-icon name="zap" [style]="{'width':'48px','height':'48px'}"></lucide-icon></div>
+      <h2 class="devpilot-editor__empty-title">Welcome to your workspace</h2>
+      <p class="devpilot-editor__empty-subtitle">Select a file from the explorer to start coding.</p>
+      <div class="devpilot-editor__shortcuts">
+        <div class="devpilot-editor__shortcut">
+          <kbd>Ctrl+P</kbd>
+          <span>Quick Open</span>
+        </div>
+        <div class="devpilot-editor__shortcut">
+          <kbd>Ctrl+Shift+P</kbd>
+          <span>Command Palette</span>
+        </div>
+        <div class="devpilot-editor__shortcut">
+          <kbd>Ctrl+S</kbd>
+          <span>Save File</span>
+        </div>
+        <div class="devpilot-editor__shortcut">
+          <kbd>Ctrl+B</kbd>
+          <span>Toggle Sidebar</span>
+        </div>
+      </div>
+    </div>
+  }
+</div>

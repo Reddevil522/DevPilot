@@ -1,0 +1,220 @@
+.devpilot-docs {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 40px;
+}
+
+.devpilot-docs__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.devpilot-docs__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--dp-text-primary);
+  margin-bottom: 4px;
+}
+
+.devpilot-docs__subtitle {
+  font-size: 13px;
+  color: var(--dp-text-secondary);
+}
+
+.devpilot-docs__generate-btn {
+  padding: 9px 18px;
+  border-radius: var(--dp-radius-xs);
+  background: linear-gradient(135deg, var(--dp-accent), var(--dp-accent-2));
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+  transition: all var(--dp-transition-fast);
+  white-space: nowrap;
+}
+.devpilot-docs__generate-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.devpilot-docs__generate-btn--sm { font-size: 12px; padding: 7px 14px; }
+
+.devpilot-docs__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.devpilot-docs__card {
+  padding: 20px;
+  border-radius: var(--dp-radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all var(--dp-transition-fast);
+}
+.devpilot-docs__card:hover { transform: translateY(-2px); }
+
+.devpilot-docs__card-icon { font-size: 28px; }
+.devpilot-docs__card-title { font-size: 15px; font-weight: 600; color: var(--dp-text-primary); }
+.devpilot-docs__card-desc { font-size: 12px; color: var(--dp-text-secondary); line-height: 1.5; }
+.devpilot-docs__card-date { font-size: 11px; color: var(--dp-text-tertiary); }
+
+.devpilot-docs__card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.devpilot-docs__card-btn {
+  padding: 5px 12px;
+  border-radius: var(--dp-radius-xs);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: var(--dp-accent);
+  color: #fff;
+  transition: opacity var(--dp-transition-fast);
+}
+.devpilot-docs__card-btn:hover { opacity: 0.85; }
+.devpilot-docs__card-btn--secondary {
+  background: var(--dp-surface-strong);
+  border: 1px solid var(--dp-surface-border);
+  color: var(--dp-text-secondary);
+}
+.devpilot-docs__card-btn--secondary:hover { color: var(--dp-text-primary); opacity: 1; }
+
+.devpilot-docs__empty-card {
+  padding: 32px 20px;
+  border-radius: var(--dp-radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  border-style: dashed;
+}
+.devpilot-docs__empty-icon { font-size: 32px; opacity: 0.5; }
+.devpilot-docs__empty-title { font-size: 14px; font-weight: 600; color: var(--dp-text-secondary); }
+.devpilot-docs__empty-desc { font-size: 12px; color: var(--dp-text-tertiary); line-height: 1.5; }
+
+/* Generator */
+.devpilot-docs__generator, .devpilot-docs__viewer { max-width: 720px; }
+.devpilot-docs__generator-header, .devpilot-docs__viewer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.devpilot-docs__generator-title, .devpilot-docs__viewer-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dp-text-primary);
+  flex: 1;
+}
+.devpilot-docs__viewer-actions { display: flex; gap: 8px; }
+
+.devpilot-docs__back-btn {
+  background: none;
+  border: none;
+  color: var(--dp-accent);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity var(--dp-transition-fast);
+}
+.devpilot-docs__back-btn:hover { opacity: 0.75; }
+
+.devpilot-docs__generator-form {
+  padding: 24px;
+  border-radius: var(--dp-radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.devpilot-docs__form-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dp-text-tertiary);
+}
+
+.devpilot-docs__type-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.devpilot-docs__type-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--dp-radius-xs);
+  border: 1px solid var(--dp-surface-border);
+  background: var(--dp-surface);
+  cursor: pointer;
+  transition: all var(--dp-transition-fast);
+}
+.devpilot-docs__type-option input { display: none; }
+.devpilot-docs__type-option:hover { border-color: var(--dp-accent); }
+.devpilot-docs__type-option--active {
+  border-color: var(--dp-accent);
+  background: rgba(99,102,241,0.08);
+}
+.devpilot-docs__type-name { font-size: 13px; font-weight: 600; color: var(--dp-text-primary); }
+.devpilot-docs__type-desc { font-size: 11px; color: var(--dp-text-tertiary); }
+
+/* Progress */
+.devpilot-docs__progress {
+  padding: 40px 24px;
+  border-radius: var(--dp-radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.devpilot-docs__progress-spinner {
+  position: relative;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.devpilot-docs__spinner-ring {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--dp-surface-border);
+  border-top-color: var(--dp-accent);
+  animation: dp-spin 1s linear infinite;
+}
+
+.devpilot-docs__progress-steps { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 300px; }
+.devpilot-docs__step {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--dp-text-tertiary);
+}
+.devpilot-docs__step--done { color: var(--dp-accent-green); }
+.devpilot-docs__step--active { color: var(--dp-text-primary); }
+.devpilot-docs__step-icon { width: 16px; text-align: center; }
+
+/* Viewer */
+.devpilot-docs__doc-content {
+  border-radius: var(--dp-radius-sm);
+  overflow-y: auto;
+  max-height: 65vh;
+  padding: 24px;
+}
+.devpilot-docs__doc-pre {
+  font-family: var(--dp-font-mono);
+  font-size: 12.5px;
+  color: var(--dp-text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .devpilot-docs { padding: 20px 16px; }
+  .devpilot-docs__header { flex-direction: column; align-items: flex-start; gap: 12px; }
+}

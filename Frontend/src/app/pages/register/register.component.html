@@ -1,0 +1,165 @@
+<dp-background></dp-background>
+
+<div class="devpilot-register">
+  <dp-auth-side
+    headline="Start building smarter with AI."
+    message="Create a free DevPilot account and get a full AI-powered development workspace in minutes."
+  ></dp-auth-side>
+
+  <div class="devpilot-register__panel">
+    <a routerLink="/" class="devpilot-register__brand-mobile">
+      <dp-logo [size]="26"></dp-logo>
+    </a>
+
+    <div class="devpilot-register__card dp-glass">
+      <h2 class="devpilot-register__title">Create your DevPilot account</h2>
+      <p class="devpilot-register__subtitle">Start building smarter with AI-powered development tools.</p>
+
+      @if (submittedOk()) {
+        <div class="devpilot-register__success" role="status">
+          <span>✓</span> Account created successfully. Redirecting…
+        </div>
+      }
+
+
+
+      <form class="devpilot-register__form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="devpilot-register__field">
+          <label for="reg-name">Full Name</label>
+          <input
+            id="reg-name"
+            type="text"
+            formControlName="fullName"
+            placeholder="Ada Lovelace"
+            autocomplete="name"
+            [class.is-invalid]="fullName.invalid && fullName.touched"
+          />
+          @if (fullName.invalid && fullName.touched) {
+            <span class="devpilot-register__hint">Enter your full name.</span>
+          }
+        </div>
+
+        <div class="devpilot-register__field">
+          <label for="reg-email">Email</label>
+          <input
+            id="reg-email"
+            type="email"
+            formControlName="email"
+            placeholder="you@company.com"
+            autocomplete="email"
+            [class.is-invalid]="email.invalid && email.touched"
+          />
+          @if (email.invalid && email.touched) {
+            <span class="devpilot-register__hint">
+              @if (email.errors?.['required']) { Email is required. }
+              @else if (email.errors?.['email']) { Enter a valid email address. }
+            </span>
+          }
+        </div>
+
+        <div class="devpilot-register__field">
+          <label for="reg-password">Password</label>
+          <div class="devpilot-register__password">
+            <input
+              id="reg-password"
+              [type]="passwordVisible() ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="Create a password"
+              autocomplete="new-password"
+              [class.is-invalid]="password.invalid && password.touched"
+            />
+            <button
+              type="button"
+              class="devpilot-register__toggle"
+              (click)="togglePassword()"
+              [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+            >
+              @if (passwordVisible()) {
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18M10.6 10.6a2.5 2.5 0 0 0 3.5 3.5M9.5 5.2A10.6 10.6 0 0 1 12 5c5 0 9 4 10.5 7-.5 1-1.3 2.2-2.4 3.3M6.3 6.9C4.2 8.2 2.7 10 1.5 12c1.5 3 5.5 7 10.5 7 1.4 0 2.7-.3 3.9-.8"/></svg>
+              } @else {
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+              }
+            </button>
+          </div>
+
+          @if (password.value) {
+            <div class="devpilot-register__strength">
+              <div class="devpilot-register__strength-track">
+                <div
+                  class="devpilot-register__strength-fill"
+                  [class.is-weak]="passwordStrength().score === 1"
+                  [class.is-medium]="passwordStrength().score === 2"
+                  [class.is-strong]="passwordStrength().score === 3"
+                ></div>
+              </div>
+              <span>{{ passwordStrength().label }}</span>
+            </div>
+          }
+
+          @if (password.invalid && password.touched) {
+            <span class="devpilot-register__hint">Password must be at least 8 characters.</span>
+          }
+        </div>
+
+        <div class="devpilot-register__field">
+          <label for="reg-confirm">Confirm Password</label>
+          <div class="devpilot-register__password">
+            <input
+              id="reg-confirm"
+              [type]="confirmVisible() ? 'text' : 'password'"
+              formControlName="confirmPassword"
+              placeholder="Re-enter your password"
+              autocomplete="new-password"
+              [class.is-invalid]="(confirmPassword.invalid && confirmPassword.touched) || passwordsMismatch"
+            />
+            <button
+              type="button"
+              class="devpilot-register__toggle"
+              (click)="toggleConfirm()"
+              [attr.aria-label]="confirmVisible() ? 'Hide password' : 'Show password'"
+            >
+              @if (confirmVisible()) {
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18M10.6 10.6a2.5 2.5 0 0 0 3.5 3.5M9.5 5.2A10.6 10.6 0 0 1 12 5c5 0 9 4 10.5 7-.5 1-1.3 2.2-2.4 3.3M6.3 6.9C4.2 8.2 2.7 10 1.5 12c1.5 3 5.5 7 10.5 7 1.4 0 2.7-.3 3.9-.8"/></svg>
+              } @else {
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+              }
+            </button>
+          </div>
+          @if (passwordsMismatch) {
+            <span class="devpilot-register__hint">Passwords do not match.</span>
+          } @else if (confirmPassword.invalid && confirmPassword.touched) {
+            <span class="devpilot-register__hint">Confirm your password.</span>
+          }
+        </div>
+
+        <label class="devpilot-register__terms">
+          <input type="checkbox" formControlName="agreeTerms" />
+          I agree to the Terms &amp; Privacy Policy
+        </label>
+        @if (agreeTerms.invalid && agreeTerms.touched) {
+          <span class="devpilot-register__hint">You must agree to continue.</span>
+        }
+
+        <button type="submit" class="devpilot-register__submit" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="devpilot-register__spinner" aria-hidden="true"></span>
+            Creating account…
+          } @else {
+            Create Account
+          }
+        </button>
+      </form>
+
+      <div class="devpilot-register__divider"><span>OR</span></div>
+
+      <button type="button" class="devpilot-register__google">
+        <svg width="17" height="17" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.87c2.27-2.09 3.56-5.17 3.56-8.66Z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.94-2.9l-3.87-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.27v3.1A12 12 0 0 0 12 24Z"/><path fill="#FBBC05" d="M5.27 14.3A7.2 7.2 0 0 1 4.89 12c0-.8.14-1.57.38-2.3v-3.1H1.27A12 12 0 0 0 0 12c0 1.94.46 3.77 1.27 5.4l4-3.1Z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.6 4.6 1.8l3.42-3.42C17.94 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.27 6.6l4 3.1C6.22 6.86 8.87 4.75 12 4.75Z"/></svg>
+        Continue with Google
+      </button>
+
+      <p class="devpilot-register__footer">
+        Already have an account? <a routerLink="/login">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>

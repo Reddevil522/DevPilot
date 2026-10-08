@@ -1,0 +1,95 @@
+<div class="devpilot-deploys dp-scroll">
+  <!-- Header -->
+  <div class="devpilot-deploys__header dp-fade-in">
+    <div>
+      <h1 class="devpilot-deploys__title">Deployments</h1>
+      <p class="devpilot-deploys__subtitle">Deploy and monitor your application</p>
+    </div>
+    <button class="devpilot-deploys__deploy-btn" (click)="deploy()" [disabled]="isDeploying()" id="deploy-btn">
+      @if (isDeploying()) {
+        <div class="devpilot-deploys__btn-spinner"></div>
+        Deploying...
+      } @else {
+        <lucide-icon name="rocket" [style]="{'width': '16px', 'height': '16px', 'margin-right': '6px'}"></lucide-icon> Deploy to Production
+      }
+    </button>
+  </div>
+
+  <!-- Environment Cards -->
+  <div class="devpilot-deploys__envs dp-fade-in">
+    <div class="devpilot-deploys__env-card dp-glass">
+      <div class="devpilot-deploys__env-header">
+        <span class="devpilot-deploys__env-name">Production</span>
+        <span class="devpilot-deploys__env-badge devpilot-deploys__env-badge--live">● Live</span>
+      </div>
+      <div class="devpilot-deploys__env-url">app.e-commerce-api.devpilot.app</div>
+      <div class="devpilot-deploys__env-meta">Last deployed 2h ago · v1.2.0</div>
+    </div>
+    <div class="devpilot-deploys__env-card dp-glass">
+      <div class="devpilot-deploys__env-header">
+        <span class="devpilot-deploys__env-name">Staging</span>
+        <span class="devpilot-deploys__env-badge devpilot-deploys__env-badge--staging">● Staging</span>
+      </div>
+      <div class="devpilot-deploys__env-url">staging.e-commerce-api.devpilot.app</div>
+      <div class="devpilot-deploys__env-meta">Last deployed 4h ago · v1.3.0-beta</div>
+    </div>
+    <div class="devpilot-deploys__env-card dp-glass">
+      <div class="devpilot-deploys__env-header">
+        <span class="devpilot-deploys__env-name">Development</span>
+        <span class="devpilot-deploys__env-badge devpilot-deploys__env-badge--dev">● Dev</span>
+      </div>
+      <div class="devpilot-deploys__env-url">dev.e-commerce-api.devpilot.app</div>
+      <div class="devpilot-deploys__env-meta">Last deployed 30m ago · v1.3.1-dev</div>
+    </div>
+  </div>
+
+  <!-- Deployment History -->
+  <div class="devpilot-deploys__section dp-fade-in">
+    <h2 class="devpilot-deploys__section-title">Deployment History</h2>
+
+    @if (isLoading()) {
+      @for (_ of [1,2,3]; track $index) {
+        <div class="devpilot-deploys__skeleton dp-skeleton" style="height:72px; margin-bottom:8px; border-radius:8px;"></div>
+      }
+    }
+
+    @if (!isLoading()) {
+      <div class="devpilot-deploys__list">
+        @for (d of deployments(); track d.id) {
+          <div class="devpilot-deploys__item dp-glass">
+            <div class="devpilot-deploys__status-icon" [class]="getStatusClass(d.status)">
+              <lucide-icon [name]="getStatusIcon(d.status)" [style]="{'width': '16px', 'height': '16px'}"></lucide-icon>
+            </div>
+            <div class="devpilot-deploys__item-info">
+              <div class="devpilot-deploys__item-commit">{{ d.commit ? 'Manual deployment from ' + d.branch : 'System update' }}</div>
+              <div class="devpilot-deploys__item-meta">
+                <span>{{ d.branch }}</span>
+                <span class="devpilot-deploys__dot">·</span>
+                <span>{{ d.environment }}</span>
+                <span class="devpilot-deploys__dot">·</span>
+                <span>{{ getRelativeTime(d.createdAt) }}</span>
+              </div>
+            </div>
+            <div class="devpilot-deploys__item-right">
+              <span class="devpilot-deploys__status-text" [class]="getStatusClass(d.status)">{{ d.status | titlecase }}</span>
+              @if (d.duration) {
+                <span class="devpilot-deploys__duration">{{ d.duration }}s</span>
+              }
+              <span class="devpilot-deploys__hash">{{ d.commit ? d.commit.substring(0, 7) : '' }}</span>
+            </div>
+            <div class="devpilot-deploys__item-actions">
+              <button class="devpilot-deploys__item-btn" title="View logs">Logs</button>
+            </div>
+          </div>
+        }
+
+        @if (deployments().length === 0) {
+          <div class="devpilot-deploys__empty">
+            <div style="display: flex; justify-content: center; margin-bottom: 12px; color: var(--dp-text-tertiary);"><lucide-icon name="rocket" [style]="{'width': '40px', 'height': '40px'}"></lucide-icon></div>
+            <p>No deployments yet. Click "Deploy to Production" to get started.</p>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

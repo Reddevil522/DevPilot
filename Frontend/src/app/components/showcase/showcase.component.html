@@ -1,0 +1,53 @@
+<section id="showcase" class="devpilot-showcase">
+  <div class="dp-container">
+    <div class="devpilot-showcase__intro">
+      <h2 class="devpilot-showcase__title">A serious workspace, built for developers.</h2>
+      <p class="devpilot-showcase__subtitle">
+        Your files, your editor and your AI assistant, together in one workspace.
+      </p>
+    </div>
+
+    <div class="devpilot-showcase__panel dp-glass">
+      <div class="devpilot-showcase__grid">
+        <div class="devpilot-showcase__col devpilot-showcase__explorer">
+          <p class="devpilot-showcase__label">Project Explorer</p>
+          <pre class="devpilot-showcase__tree">my-project
+├── src
+│   ├── components
+│   ├── services
+│   └── app.ts
+├── package.json
+└── README.md</pre>
+        </div>
+
+        <div class="devpilot-showcase__col devpilot-showcase__editor">
+          <p class="devpilot-showcase__label">Code Editor</p>
+          <pre class="devpilot-showcase__code"><code><span class="tok-kw">import</span> &#123; Injectable &#125; <span class="tok-kw">from</span> <span class="tok-str">'&#64;angular/core'</span>;
+
+<span class="tok-kw">&#64;Injectable</span>(&#123; providedIn: <span class="tok-str">'root'</span> &#125;)
+<span class="tok-kw">export class</span> <span class="tok-fn">ProjectService</span> &#123;
+  <span class="tok-fn">list</span>() &#123;
+    <span class="tok-kw">return</span> <span class="tok-var">this</span>.projects;
+  &#125;
+&#125;</code></pre>
+        </div>
+
+        <div class="devpilot-showcase__col devpilot-showcase__ai">
+          <p class="devpilot-showcase__label">AI Assistant</p>
+          <p class="devpilot-showcase__ai-prompt">How can I help?</p>
+          <ul class="devpilot-showcase__ai-list">
+            <li>✓ Explain this code</li>
+            <li>✓ Fix this error</li>
+            <li>✓ Generate documentation</li>
+            <li>✓ Refactor component</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="devpilot-showcase__terminal">
+        <span class="devpilot-showcase__terminal-prompt">$</span>
+        devpilot deploy — building… done. Deployed to production.
+      </div>
+    </div>
+  </div>
+</section>

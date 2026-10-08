@@ -1,0 +1,45 @@
+<div class="devpilot-cmd-overlay" (click)="close()">
+  <div class="devpilot-cmd dp-glass-panel dp-fade-in" (click)="$event.stopPropagation()">
+    <div class="devpilot-cmd__search-wrap">
+      <svg class="devpilot-cmd__search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="6.5" cy="6.5" r="5"/><path d="M11 11l3 3" stroke-linecap="round"/>
+      </svg>
+      <input
+        id="command-palette-input"
+        class="devpilot-cmd__input"
+        [formControl]="query"
+        placeholder="Search DevPilot..."
+        autofocus
+        autocomplete="off"
+      />
+      <kbd class="devpilot-cmd__esc">Esc</kbd>
+    </div>
+
+    <div class="devpilot-cmd__results dp-scroll">
+      @if (filteredCommands.length === 0) {
+        <div class="devpilot-cmd__empty">No results found</div>
+      }
+      @for (cmd of filteredCommands; track cmd.id; let i = $index) {
+        <button
+          class="devpilot-cmd__result"
+          [class.devpilot-cmd__result--selected]="selectedIndex() === i"
+          (click)="execute(cmd)"
+          (mouseenter)="selectedIndex.set(i)"
+        >
+          <span class="devpilot-cmd__result-icon"><lucide-icon [name]="cmd.icon" [style]="{'width':'14px','height':'14px'}"></lucide-icon></span>
+          <span class="devpilot-cmd__result-label">{{ cmd.label }}</span>
+          <span class="devpilot-cmd__result-category">{{ cmd.category }}</span>
+          @if (cmd.shortcut) {
+            <kbd class="devpilot-cmd__shortcut">{{ cmd.shortcut }}</kbd>
+          }
+        </button>
+      }
+    </div>
+
+    <div class="devpilot-cmd__footer">
+      <span><kbd>↑↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> select</span>
+      <span><kbd>Esc</kbd> close</span>
+    </div>
+  </div>
+</div>

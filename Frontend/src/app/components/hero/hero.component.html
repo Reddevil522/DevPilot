@@ -1,0 +1,89 @@
+<section id="top" class="devpilot-hero">
+  <div class="dp-container devpilot-hero__grid">
+    <div class="devpilot-hero__copy">
+      <span class="devpilot-hero__badge dp-glass">
+        <span class="devpilot-hero__badge-dot"></span>
+        AI-Powered Developer Platform
+      </span>
+
+      <h1 class="devpilot-hero__title">Build. Code. Deploy.<br />With AI.</h1>
+
+      <p class="devpilot-hero__description">
+        DevPilot is an AI-powered development platform that helps you create projects, write
+        code, generate documentation, manage workflows, and deploy applications from one place.
+      </p>
+
+      <div class="devpilot-hero__actions">
+        <a routerLink="/register" class="devpilot-hero__primary">Start Building Free</a>
+        <a routerLink="/" fragment="showcase" class="devpilot-hero__secondary">Explore DevPilot</a>
+      </div>
+    </div>
+
+    <div class="devpilot-hero__visual">
+      <div class="devpilot-hero__dashboard dp-glass">
+        <div class="devpilot-hero__dash-bar">
+          <span class="devpilot-hero__dot devpilot-hero__dot--r"></span>
+          <span class="devpilot-hero__dot devpilot-hero__dot--y"></span>
+          <span class="devpilot-hero__dot devpilot-hero__dot--g"></span>
+          <span class="devpilot-hero__dash-title">devpilot-workspace</span>
+        </div>
+
+        <div class="devpilot-hero__dash-body">
+          <aside class="devpilot-hero__explorer">
+            <p class="devpilot-hero__panel-label">Explorer</p>
+            <ul>
+              <li class="is-open">src</li>
+              <li class="nested">components</li>
+              <li class="nested is-active">app.ts</li>
+              <li>package.json</li>
+            </ul>
+          </aside>
+
+          <div class="devpilot-hero__editor">
+            <p class="devpilot-hero__panel-label">app.ts</p>
+            <pre class="devpilot-hero__code"><code><span class="tok-kw">import</span> &#123; Component &#125; <span class="tok-kw">from</span> <span class="tok-str">'&#64;angular/core'</span>;
+
+<span class="tok-kw">export class</span> <span class="tok-fn">AppComponent</span> &#123;
+  <span class="tok-fn">deploy</span>() &#123;
+    <span class="tok-var">ai</span>.<span class="tok-fn">assist</span>(<span class="tok-str">'ship it'</span>);
+  &#125;
+&#125;</code></pre>
+          </div>
+
+          <aside class="devpilot-hero__ai">
+            <p class="devpilot-hero__panel-label">AI Assistant</p>
+            <div class="devpilot-hero__ai-msg">Refactor this component for clarity?</div>
+            <div class="devpilot-hero__ai-msg devpilot-hero__ai-msg--reply">
+              Done — extracted 2 methods.
+            </div>
+          </aside>
+        </div>
+
+        <div class="devpilot-hero__dash-footer">
+          <span class="devpilot-hero__git">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="9" r="2.4"/><path d="M6 8.4V15.6M6 8.4c0 3.5 3 4.4 6 4.4h3.6M18 6.6V6.6"/></svg>
+            main · clean
+          </span>
+          <span class="devpilot-hero__deploy">
+            <span class="devpilot-hero__deploy-dot"></span>
+            Live
+          </span>
+        </div>
+      </div>
+
+      <div class="devpilot-hero__float devpilot-hero__float--ai dp-glass">
+        <span class="devpilot-hero__float-icon">✦</span> AI Assistant
+      </div>
+      <div class="devpilot-hero__float devpilot-hero__float--deploy dp-glass">
+        <span class="devpilot-hero__float-icon devpilot-hero__float-icon--ok">✓</span> Deployment
+        Successful
+      </div>
+      <div class="devpilot-hero__float devpilot-hero__float--docs dp-glass">
+        <span class="devpilot-hero__float-icon">▤</span> Documentation Generated
+      </div>
+      <div class="devpilot-hero__float devpilot-hero__float--git dp-glass">
+        <span class="devpilot-hero__float-icon">↑</span> Git Push
+      </div>
+    </div>
+  </div>
+</section>

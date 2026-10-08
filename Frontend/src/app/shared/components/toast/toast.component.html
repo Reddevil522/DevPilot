@@ -1,0 +1,12 @@
+<div class="dp-toast-container" role="status" aria-live="polite">
+  @for (n of notifications(); track trackById($index, n)) {
+    <div class="dp-toast dp-toast--{{ n.kind }}" (click)="dismiss(n.id)">
+      <span class="dp-toast__icon">
+        @if (n.kind === 'success') { ✓ }
+        @else if (n.kind === 'error') { ! }
+        @else { ℹ }
+      </span>
+      <span class="dp-toast__message">{{ n.message }}</span>
+    </div>
+  }
+</div>

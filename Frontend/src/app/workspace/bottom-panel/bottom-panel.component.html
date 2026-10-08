@@ -1,0 +1,73 @@
+<div class="devpilot-panel">
+  <!-- Panel Header -->
+  <div class="devpilot-panel__header">
+    <div class="devpilot-panel__tabs">
+      @for (tab of tabs; track tab) {
+        <button
+          class="devpilot-panel__tab"
+          [class.devpilot-panel__tab--active]="activeTab() === tab"
+          (click)="selectTab(tab)"
+        >
+          {{ getTabLabel(tab) }}
+        </button>
+      }
+    </div>
+    <div class="devpilot-panel__header-actions">
+      <span class="devpilot-panel__cwd">~/e-commerce-api</span>
+    </div>
+  </div>
+
+  <!-- Terminal -->
+  @if (activeTab() === 'terminal') {
+    <div class="devpilot-panel__terminal dp-scroll">
+      @for (line of terminalLines(); track $index) {
+        <div class="devpilot-panel__terminal-line devpilot-panel__terminal-line--{{ line.type }}">
+          @if (line.type === 'command') {
+            <span class="devpilot-panel__prompt">$</span>
+          }
+          <span>{{ line.text }}</span>
+        </div>
+      }
+      <!-- Active cursor -->
+      <div class="devpilot-panel__cursor-line">
+        <span class="devpilot-panel__prompt">$</span>
+        <span class="devpilot-panel__cursor"></span>
+      </div>
+    </div>
+  }
+
+  <!-- Problems -->
+  @if (activeTab() === 'problems') {
+    <div class="devpilot-panel__content dp-scroll">
+      <div class="devpilot-panel__problem devpilot-panel__problem--warning">
+        <span class="devpilot-panel__problem-icon"><lucide-icon name="triangle-alert" [style]="{'width':'14px','height':'14px'}"></lucide-icon></span>
+        <span class="devpilot-panel__problem-msg">Unused variable 'temp' in server.ts (line 14)</span>
+        <span class="devpilot-panel__problem-loc">server.ts:14</span>
+      </div>
+      <div class="devpilot-panel__problem devpilot-panel__problem--warning">
+        <span class="devpilot-panel__problem-icon"><lucide-icon name="triangle-alert" [style]="{'width':'14px','height':'14px'}"></lucide-icon></span>
+        <span class="devpilot-panel__problem-msg">Consider using const instead of let in auth.routes.ts</span>
+        <span class="devpilot-panel__problem-loc">auth.routes.ts:8</span>
+      </div>
+    </div>
+  }
+
+  <!-- Output -->
+  @if (activeTab() === 'output') {
+    <div class="devpilot-panel__content dp-scroll">
+      <div class="devpilot-panel__output-line">[2026-09-20 22:13:04] Build started...</div>
+      <div class="devpilot-panel__output-line">[2026-09-20 22:13:08] TypeScript compilation complete.</div>
+      <div class="devpilot-panel__output-line devpilot-panel__output-line--success">[2026-09-20 22:13:09] <lucide-icon name="check" [style]="{'width':'14px','height':'14px', 'margin-right':'4px'}"></lucide-icon> Build successful (4.2s)</div>
+    </div>
+  }
+
+  <!-- Debug Console -->
+  @if (activeTab() === 'debug') {
+    <div class="devpilot-panel__content dp-scroll">
+      <div class="devpilot-panel__debug-empty">
+        <span>No debugger attached.</span>
+        <span class="devpilot-panel__debug-hint">Press F5 to start debugging</span>
+      </div>
+    </div>
+  }
+</div>

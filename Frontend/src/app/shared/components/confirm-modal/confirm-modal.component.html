@@ -1,0 +1,23 @@
+@if (isVisible) {
+  <div class="dp-confirm-overlay" (click)="onCancel()">
+    <div class="dp-confirm-modal dp-glass-panel dp-fade-in" (click)="$event.stopPropagation()">
+      <div class="dp-confirm-modal__icon" [class.dp-confirm-modal__icon--danger]="danger">
+        @if (danger) { ⚠ } @else { ? }
+      </div>
+      <h3 class="dp-confirm-modal__title">{{ title }}</h3>
+      <p class="dp-confirm-modal__message">{{ message }}</p>
+      <div class="dp-confirm-modal__actions">
+        <button class="dp-confirm-modal__btn dp-confirm-modal__btn--cancel" (click)="onCancel()">
+          {{ cancelText }}
+        </button>
+        <button
+          class="dp-confirm-modal__btn"
+          [class.dp-confirm-modal__btn--danger]="danger"
+          [class.dp-confirm-modal__btn--confirm]="!danger"
+          (click)="onConfirm()">
+          {{ confirmText }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,233 @@
+/* ==========================================================================
+   DevPilot — Global design tokens
+   ========================================================================== */
+
+:root {
+  --dp-font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --dp-font-body: 'Inter', sans-serif;
+  --dp-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --dp-accent: #6366f1;
+  --dp-accent-2: #8b5cf6;
+  --dp-accent-cyan: #5eead4;
+  --dp-accent-green: #34d399;
+  --dp-accent-red: #f87171;
+  --dp-accent-yellow: #fbbf24;
+
+  --dp-radius-sm: 10px;
+  --dp-radius-md: 16px;
+  --dp-radius-lg: 24px;
+  --dp-radius-xs: 6px;
+
+  --dp-shadow-glass: 0 8px 32px rgba(8, 10, 20, 0.28);
+  --dp-shadow-soft: 0 4px 18px rgba(8, 10, 20, 0.14);
+  --dp-shadow-panel: 0 2px 12px rgba(8, 10, 20, 0.2);
+
+  --dp-transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  --dp-transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* IDE Layout Dimensions */
+  --dp-navbar-height: 48px;
+  --dp-statusbar-height: 24px;
+  --dp-actbar-width: 48px;
+  --dp-sidebar-width: 260px;
+  --dp-ai-panel-width: 320px;
+  --dp-bottom-panel-height: 220px;
+
+  color-scheme: dark;
+}
+
+:root[data-theme='dark'] {
+  --dp-bg: #090c14;
+  --dp-bg-secondary: #0d111c;
+  --dp-surface: rgba(255, 255, 255, 0.045);
+  --dp-surface-strong: rgba(255, 255, 255, 0.07);
+  --dp-surface-border: rgba(255, 255, 255, 0.09);
+  --dp-text-primary: #f2f3f9;
+  --dp-text-secondary: #a3aac2;
+  --dp-text-tertiary: #6b7180;
+  --dp-glow-1: rgba(99, 102, 241, 0.35);
+  --dp-glow-2: rgba(139, 92, 246, 0.28);
+  --dp-grid-line: rgba(255, 255, 255, 0.035);
+  /* IDE Panel Surfaces */
+  --dp-panel-bg: #0b0e1a;
+  --dp-panel-bg-alt: #0f1320;
+  --dp-actbar-bg: #080b14;
+  --dp-navbar-bg: rgba(9, 12, 20, 0.92);
+  --dp-statusbar-bg: #6366f1;
+  --dp-terminal-bg: #040608;
+  --dp-editor-bg: #090c14;
+  --dp-scrollbar-thumb: rgba(255,255,255,0.12);
+  --dp-scrollbar-track: transparent;
+  --dp-overlay-bg: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --dp-bg: #f6f7fb;
+  --dp-bg-secondary: #ffffff;
+  --dp-surface: rgba(255, 255, 255, 0.85);
+  --dp-surface-strong: rgba(255, 255, 255, 0.92);
+  --dp-surface-border: rgba(29, 33, 57, 0.08);
+  --dp-text-primary: #14151f;
+  --dp-text-secondary: #4c5166;
+  --dp-text-tertiary: #82869a;
+  --dp-glow-1: rgba(99, 102, 241, 0.18);
+  --dp-glow-2: rgba(139, 92, 246, 0.14);
+  --dp-grid-line: rgba(20, 21, 31, 0.045);
+  /* IDE Panel Surfaces */
+  --dp-panel-bg: #f0f1f7;
+  --dp-panel-bg-alt: #e8eaf2;
+  --dp-actbar-bg: #e4e6f0;
+  --dp-navbar-bg: rgba(246, 247, 251, 0.92);
+  --dp-statusbar-bg: #6366f1;
+  --dp-terminal-bg: #1a1d2e;
+  --dp-editor-bg: #ffffff;
+  --dp-scrollbar-thumb: rgba(0,0,0,0.15);
+  --dp-scrollbar-track: transparent;
+  --dp-overlay-bg: rgba(29, 33, 57, 0.2);
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--dp-bg);
+  color: var(--dp-text-primary);
+  font-family: var(--dp-font-body);
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--dp-transition), color var(--dp-transition);
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--dp-font-display);
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: var(--dp-text-primary);
+}
+
+p {
+  margin: 0;
+  color: var(--dp-text-secondary);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--dp-font-body);
+}
+
+::selection {
+  background: var(--dp-accent);
+  color: #fff;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--dp-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.dp-glass {
+  background: var(--dp-surface);
+  border: 1px solid var(--dp-surface-border);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: var(--dp-shadow-glass);
+  transition: background var(--dp-transition), border-color var(--dp-transition),
+    box-shadow var(--dp-transition), transform var(--dp-transition);
+}
+
+.dp-container {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* IDE Scrollbar Styling */
+.dp-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.dp-scroll::-webkit-scrollbar-track {
+  background: var(--dp-scrollbar-track);
+}
+.dp-scroll::-webkit-scrollbar-thumb {
+  background: var(--dp-scrollbar-thumb);
+  border-radius: 3px;
+}
+.dp-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.4);
+}
+
+/* IDE Workspace Root */
+.dp-workspace-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+/* Glass panel utility */
+.dp-glass-panel {
+  background: var(--dp-surface);
+  border: 1px solid var(--dp-surface-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Skeleton pulse animation */
+@keyframes dp-skeleton-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.dp-skeleton {
+  background: var(--dp-surface-strong);
+  border-radius: var(--dp-radius-xs);
+  animation: dp-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Fade-in animation */
+@keyframes dp-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dp-fade-in {
+  animation: dp-fade-in 0.3s ease-out forwards;
+}

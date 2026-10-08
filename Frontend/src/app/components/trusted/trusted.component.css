@@ -1,0 +1,26 @@
+.devpilot-trusted {
+  padding: 40px 0 80px;
+}
+
+.devpilot-trusted__heading {
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--dp-text-tertiary);
+  margin-bottom: 24px;
+}
+
+.devpilot-trusted__pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.devpilot-trusted__pill {
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--dp-text-secondary);
+}

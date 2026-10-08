@@ -1,0 +1,148 @@
+<div class="devpilot-dashboard dp-scroll">
+  <!-- Background glow -->
+  <div class="devpilot-dashboard__bg-glow"></div>
+
+  <!-- Header -->
+  <div class="devpilot-dashboard__header dp-fade-in">
+    <div>
+      <h1 class="devpilot-dashboard__greeting">{{ greeting }}, {{ user()?.name || 'Developer' }} ✨</h1>
+      <p class="devpilot-dashboard__subtitle">Let's continue building something great.</p>
+    </div>
+    <button class="devpilot-dashboard__create-btn" (click)="createModalOpen.set(true)" id="create-project-btn">
+      <lucide-icon name="plus"></lucide-icon>
+      Create Project
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="devpilot-dashboard__stats dp-fade-in">
+    <div class="devpilot-dashboard__stat-card dp-glass">
+      <div class="devpilot-dashboard__stat-icon devpilot-dashboard__stat-icon--1"><lucide-icon name="folder-open"></lucide-icon></div>
+      <div class="devpilot-dashboard__stat-value">{{ stats().total }}</div>
+      <div class="devpilot-dashboard__stat-label">Projects</div>
+    </div>
+    <div class="devpilot-dashboard__stat-card dp-glass">
+      <div class="devpilot-dashboard__stat-icon devpilot-dashboard__stat-icon--2"><lucide-icon name="zap"></lucide-icon></div>
+      <div class="devpilot-dashboard__stat-value">{{ stats().active }}</div>
+      <div class="devpilot-dashboard__stat-label">Active Projects</div>
+    </div>
+    <div class="devpilot-dashboard__stat-card dp-glass">
+      <div class="devpilot-dashboard__stat-icon devpilot-dashboard__stat-icon--3"><lucide-icon name="rocket"></lucide-icon></div>
+      <div class="devpilot-dashboard__stat-value">{{ stats().deployments }}</div>
+      <div class="devpilot-dashboard__stat-label">Deployments</div>
+    </div>
+    <div class="devpilot-dashboard__stat-card dp-glass">
+      <div class="devpilot-dashboard__stat-icon devpilot-dashboard__stat-icon--4"><lucide-icon name="bot"></lucide-icon></div>
+      <div class="devpilot-dashboard__stat-value">{{ stats().aiTasks }}</div>
+      <div class="devpilot-dashboard__stat-label">AI Tasks</div>
+    </div>
+  </div>
+
+  <!-- Recent Projects -->
+  <div class="devpilot-dashboard__section dp-fade-in">
+    <div class="devpilot-dashboard__section-header">
+      <h2 class="devpilot-dashboard__section-title">Recent Projects</h2>
+      <button class="devpilot-dashboard__section-link">View all →</button>
+    </div>
+
+    <!-- Loading Skeleton -->
+    @if (isLoading()) {
+      <div class="devpilot-dashboard__projects-grid">
+        @for (_ of [1,2,3,4]; track $index) {
+          <div class="devpilot-dashboard__project-skeleton dp-glass">
+            <div class="dp-skeleton" style="height:36px; width:36px; border-radius:10px; margin-bottom:12px;"></div>
+            <div class="dp-skeleton" style="height:16px; width:70%; margin-bottom:8px;"></div>
+            <div class="dp-skeleton" style="height:12px; width:90%;"></div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Projects Grid -->
+    @if (!isLoading()) {
+      <div class="devpilot-dashboard__projects-grid">
+        @for (project of projects(); track project.id) {
+          <div class="devpilot-dashboard__project-card dp-glass">
+            <div class="devpilot-dashboard__project-icon"><lucide-icon [name]="getTechIcon(project.technology)"></lucide-icon></div>
+            <div class="devpilot-dashboard__project-info">
+              <div class="devpilot-dashboard__project-name">{{ project.name }}</div>
+              <div class="devpilot-dashboard__project-tech">{{ project.language }}</div>
+              <div class="devpilot-dashboard__project-meta">
+                <span class="devpilot-dashboard__project-updated">Updated {{ getRelativeTime(project.updatedAt) }}</span>
+                <span class="devpilot-dashboard__status" [class]="getStatusClass(project.status)">
+                  <span class="devpilot-dashboard__status-dot"></span>
+                  {{ project.status | titlecase }}
+                </span>
+              </div>
+            </div>
+            <div class="devpilot-dashboard__project-actions">
+              <button class="devpilot-dashboard__project-btn devpilot-dashboard__project-btn--primary" (click)="openProject(project)">
+                Open
+              </button>
+              <button class="devpilot-dashboard__project-btn devpilot-dashboard__project-btn--danger" (click)="deleteProject(project, $event)">
+                <lucide-icon name="trash-2" size="14"></lucide-icon> Delete
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Create Card -->
+        <div class="devpilot-dashboard__create-card dp-glass" (click)="createModalOpen.set(true)">
+          <div class="devpilot-dashboard__create-card-icon"><lucide-icon name="plus"></lucide-icon></div>
+          <div class="devpilot-dashboard__create-card-label">Create Project</div>
+          <p class="devpilot-dashboard__create-card-desc">Start building something new</p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="devpilot-dashboard__section dp-fade-in">
+    <h2 class="devpilot-dashboard__section-title">Quick Actions</h2>
+    <div class="devpilot-dashboard__quick-grid">
+      <button class="devpilot-dashboard__quick-card dp-glass">
+        <span class="devpilot-dashboard__quick-icon"><lucide-icon name="bot"></lucide-icon></span>
+        <span class="devpilot-dashboard__quick-label">Ask AI</span>
+      </button>
+      <button class="devpilot-dashboard__quick-card dp-glass">
+        <span class="devpilot-dashboard__quick-icon"><lucide-icon name="file-text"></lucide-icon></span>
+        <span class="devpilot-dashboard__quick-label">Generate Docs</span>
+      </button>
+      <button class="devpilot-dashboard__quick-card dp-glass">
+        <span class="devpilot-dashboard__quick-icon"><lucide-icon name="rocket"></lucide-icon></span>
+        <span class="devpilot-dashboard__quick-label">Deploy</span>
+      </button>
+      <button class="devpilot-dashboard__quick-card dp-glass">
+        <span class="devpilot-dashboard__quick-icon"><lucide-icon name="arrow-up"></lucide-icon></span>
+        <span class="devpilot-dashboard__quick-label">Push Code</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Project Modal -->
+<app-create-project-modal
+  [isVisible]="createModalOpen()"
+  (closed)="createModalOpen.set(false)"
+  (projectCreated)="onProjectCreated($event)"
+></app-create-project-modal>
+
+<!-- Delete Confirmation Modal -->
+@if (projectToDelete()) {
+  <div class="devpilot-modal-overlay dp-fade-in" (click)="cancelDelete()">
+    <div class="devpilot-modal-content dp-glass" (click)="$event.stopPropagation()">
+      <div class="devpilot-modal-header">
+        <h3>Delete this project from DevPilot?</h3>
+        <button class="devpilot-modal-close" (click)="cancelDelete()"><lucide-icon name="x" size="20"></lucide-icon></button>
+      </div>
+      <div class="devpilot-modal-body">
+        <p>Are you sure you want to delete the project <strong>"{{ projectToDelete()?.name }}"</strong>?</p>
+        <p style="margin-top: 8px; font-size: 13px; color: #ff6b6b;">For local projects, this will permanently delete the project folder and its files from your computer.</p>
+      </div>
+      <div class="devpilot-modal-footer">
+        <button class="devpilot-btn devpilot-btn--secondary" (click)="cancelDelete()">Cancel</button>
+        <button class="devpilot-btn devpilot-btn--danger" (click)="confirmDelete()">Delete Project</button>
+      </div>
+    </div>
+  </div>
+}

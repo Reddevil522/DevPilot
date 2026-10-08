@@ -1,0 +1,73 @@
+.devpilot-actbar {
+  width: var(--dp-actbar-width);
+  background: var(--dp-actbar-bg);
+  border-right: 1px solid var(--dp-surface-border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.devpilot-actbar__top,
+.devpilot-actbar__bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0;
+}
+
+.devpilot-actbar__btn {
+  position: relative;
+  width: 40px; height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--dp-radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dp-text-tertiary);
+  transition: color var(--dp-transition-fast), background var(--dp-transition-fast);
+  padding: 0;
+}
+
+.devpilot-actbar__btn:hover {
+  color: var(--dp-text-primary);
+  background: var(--dp-surface);
+}
+
+.devpilot-actbar__btn--active {
+  color: var(--dp-text-primary);
+}
+
+.devpilot-actbar__active-indicator {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 2px;
+  height: 22px;
+  background: var(--dp-accent);
+  border-radius: 0 2px 2px 0;
+  transition: transform var(--dp-transition-fast);
+}
+
+.devpilot-actbar__active-indicator--visible {
+  transform: translateY(-50%) scaleY(1);
+}
+
+.devpilot-actbar__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile: hide on small screens */
+@media (max-width: 640px) {
+  .devpilot-actbar {
+    display: none;
+  }
+}

@@ -1,0 +1,130 @@
+@if (isVisible) {
+  <div class="dp-cpmodal-overlay" (click)="close()">
+    <div class="dp-cpmodal dp-glass-panel dp-fade-in" (click)="$event.stopPropagation()">
+
+      <!-- FORM STEP -->
+      @if (step() === 'form') {
+        <div class="dp-cpmodal__header">
+          <div class="dp-cpmodal__header-icon"><lucide-icon name="zap"></lucide-icon></div>
+          <div>
+            <h2 class="dp-cpmodal__title">Create a new project</h2>
+            <p class="dp-cpmodal__subtitle">Set up your DevPilot workspace in seconds</p>
+          </div>
+          <button class="dp-cpmodal__close" (click)="close()">×</button>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="onCreate()" class="dp-cpmodal__form">
+          <!-- Project Name -->
+          <div class="dp-cpmodal__field">
+            <label class="dp-cpmodal__label" for="proj-name">Project Name</label>
+            <input
+              id="proj-name"
+              class="dp-cpmodal__input"
+              [class.dp-cpmodal__input--error]="form.controls.name.touched && form.controls.name.invalid"
+              type="text"
+              formControlName="name"
+              placeholder="my-awesome-project"
+              autocomplete="off"
+            />
+            @if (form.controls.name.touched && form.controls.name.errors?.['required']) {
+              <span class="dp-cpmodal__error">Project name is required</span>
+            }
+            @if (form.controls.name.touched && form.controls.name.errors?.['pattern']) {
+              <span class="dp-cpmodal__error">Only lowercase letters, numbers and hyphens</span>
+            }
+          </div>
+
+          <!-- Description -->
+          <div class="dp-cpmodal__field">
+            <label class="dp-cpmodal__label" for="proj-desc">Description <span class="dp-cpmodal__optional">optional</span></label>
+            <textarea
+              id="proj-desc"
+              class="dp-cpmodal__input dp-cpmodal__textarea"
+              formControlName="description"
+              placeholder="What are you building?"
+              rows="2"
+            ></textarea>
+          </div>
+
+
+          <!-- Template -->
+          <div class="dp-cpmodal__field">
+            <label class="dp-cpmodal__label">Template</label>
+            <div class="dp-cpmodal__grid dp-cpmodal__grid--templates">
+              @for (tpl of templates; track tpl.value) {
+                <label class="dp-cpmodal__template" [class.dp-cpmodal__template--active]="form.controls.template.value === tpl.value">
+                  <input type="radio" formControlName="template" [value]="tpl.value" />
+                  <span class="dp-cpmodal__template-name">{{ tpl.label }}</span>
+                  <span class="dp-cpmodal__template-desc">{{ tpl.desc }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+
+
+          <!-- Local Path -->
+          <div class="dp-cpmodal__field dp-fade-in">
+            <label class="dp-cpmodal__label" for="proj-local-path">Local Directory Path</label>
+            <input
+              id="proj-local-path"
+              class="dp-cpmodal__input"
+              [class.dp-cpmodal__input--error]="form.controls.localPath.touched && form.controls.localPath.invalid"
+              type="text"
+              formControlName="localPath"
+              placeholder="D:\Projects or /Users/name/Projects"
+              autocomplete="off"
+            />
+            @if (form.controls.localPath.touched && form.controls.localPath.errors?.['required']) {
+              <span class="dp-cpmodal__error">Local path is required</span>
+            }
+          </div>
+
+          <div class="dp-cpmodal__actions">
+            <button type="button" class="dp-cpmodal__btn dp-cpmodal__btn--cancel" (click)="close()">Cancel</button>
+            <button type="submit" class="dp-cpmodal__btn dp-cpmodal__btn--create" [disabled]="form.invalid">
+              <span style="display:flex; align-items:center; gap:6px;"><lucide-icon name="zap" [style]="{'width':'16px','height':'16px'}"></lucide-icon> Create Project</span>
+            </button>
+          </div>
+        </form>
+      }
+
+      <!-- CREATING STEP -->
+      @if (step() === 'creating') {
+        <div class="dp-cpmodal__creating">
+          <div class="dp-cpmodal__spinner">
+            <div class="dp-cpmodal__spinner-ring"></div>
+            <span class="dp-cpmodal__spinner-icon"><lucide-icon name="zap" [style]="{'width':'16px','height':'16px'}"></lucide-icon></span>
+          </div>
+          <h3 class="dp-cpmodal__creating-title">Creating your workspace...</h3>
+          <div class="dp-cpmodal__steps">
+            @for (s of creatingSteps(); track $index; let i = $index) {
+              <div class="dp-cpmodal__step" [class.dp-cpmodal__step--done]="currentStep() > i" [class.dp-cpmodal__step--active]="currentStep() === i">
+                <span class="dp-cpmodal__step-icon">
+                  @if (currentStep() > i) { <lucide-icon name="check-circle" [style]="{'width':'16px','height':'16px', 'stroke':'var(--dp-accent-green)'}"></lucide-icon> }
+                  @else if (currentStep() === i) { <lucide-icon name="clock" [style]="{'width':'16px','height':'16px', 'stroke':'var(--dp-accent)'}"></lucide-icon> }
+                  @else { <lucide-icon name="circle" [style]="{'width':'16px','height':'16px'}"></lucide-icon> }
+                </span>
+                {{ s }}
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- SUCCESS STEP -->
+      @if (step() === 'success') {
+        <div class="dp-cpmodal__success dp-fade-in">
+          <div class="dp-cpmodal__success-icon"><lucide-icon name="sparkles" [style]="{'width':'48px','height':'48px'}"></lucide-icon></div>
+          <h3 class="dp-cpmodal__success-title">Project ready</h3>
+          <p class="dp-cpmodal__success-msg">Your development workspace is ready to go.</p>
+          <div class="dp-cpmodal__actions dp-cpmodal__actions--center">
+            <button class="dp-cpmodal__btn dp-cpmodal__btn--cancel" (click)="close()">Later</button>
+            <button class="dp-cpmodal__btn dp-cpmodal__btn--create" (click)="openWorkspace()">Open Workspace →</button>
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+}

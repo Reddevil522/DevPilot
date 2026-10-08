@@ -1,0 +1,29 @@
+@if (projectService.activeProject()) {
+<footer class="devpilot-statusbar">
+  <!-- Left -->
+  <div class="devpilot-statusbar__left">
+    <button class="devpilot-statusbar__item devpilot-statusbar__item--branch" title="Git Branch">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+        <path fill-rule="evenodd" d="M11.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122V6A2.5 2.5 0 0110 8.5H6a1 1 0 00-1 1v1.128a2.251 2.251 0 11-1.5 0V5.372a2.25 2.25 0 111.5 0v1.836A2.492 2.492 0 016 7h4a1 1 0 001-1v-.628A2.25 2.25 0 019.5 3.25zM4.25 12a.75.75 0 100 1.5.75.75 0 000-1.5z"/>
+      </svg>
+      {{ branch }}
+    </button>
+    <button class="devpilot-statusbar__item" [class.devpilot-statusbar__item--error]="errors > 0" title="{{ errors }} errors">
+      <lucide-icon name="x-circle" [style]="{'width':'14px', 'height':'14px', 'display': 'inline-flex'}"></lucide-icon> <span>{{ errors }}</span>
+    </button>
+    <button class="devpilot-statusbar__item" [class.devpilot-statusbar__item--warning]="warnings > 0" title="{{ warnings }} warnings">
+      <lucide-icon name="triangle-alert" [style]="{'width':'14px', 'height':'14px', 'display': 'inline-flex'}"></lucide-icon> <span>{{ warnings }}</span>
+    </button>
+  </div>
+
+  <!-- Right -->
+  <div class="devpilot-statusbar__right">
+    @if (editorService.activeTab()) {
+      <span class="devpilot-statusbar__item">Ln {{ line }}, Col {{ col }}</span>
+      <span class="devpilot-statusbar__item">{{ language }}</span>
+      <span class="devpilot-statusbar__item">{{ encoding }}</span>
+      <span class="devpilot-statusbar__item">{{ lineEnding }}</span>
+    }
+  </div>
+</footer>
+}

@@ -1,0 +1,24 @@
+<section id="ai" class="devpilot-ai">
+  <div class="devpilot-ai__glow" aria-hidden="true"></div>
+  <div class="dp-container devpilot-ai__grid">
+    <div class="devpilot-ai__copy">
+      <h2 class="devpilot-ai__title">Your AI development partner</h2>
+      <p class="devpilot-ai__subtitle">
+        DevPilot AI works alongside you throughout the development lifecycle — from the first
+        line of code to the last deploy.
+      </p>
+    </div>
+
+    <div class="devpilot-ai__cards">
+      @for (item of capabilities; track item.title) {
+        <div class="devpilot-ai__card dp-glass">
+          <span class="devpilot-ai__card-icon">{{ item.icon }}</span>
+          <div>
+            <h3 class="devpilot-ai__card-title">{{ item.title }}</h3>
+            <p class="devpilot-ai__card-desc">{{ item.desc }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>

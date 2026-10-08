@@ -1,0 +1,65 @@
+.dp-toast-container {
+  position: fixed;
+  bottom: 40px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.dp-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--dp-radius-xs);
+  background: var(--dp-surface-strong);
+  border: 1px solid var(--dp-surface-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  color: var(--dp-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: all;
+  cursor: pointer;
+  animation: dp-toast-in 0.25s ease-out;
+  min-width: 240px;
+  max-width: 360px;
+}
+
+@keyframes dp-toast-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.dp-toast--success .dp-toast__icon, .dp-toast--success .dp-toast__message { color: var(--dp-accent-green); }
+.dp-toast--error .dp-toast__icon, .dp-toast--error .dp-toast__message { color: var(--dp-accent-red); }
+.dp-toast--info .dp-toast__icon, .dp-toast--info .dp-toast__message { color: var(--dp-accent); }
+
+.dp-toast__icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.dp-toast__message {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.dp-toast__close {
+  background: none;
+  border: none;
+  color: var(--dp-text-tertiary);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color var(--dp-transition-fast);
+}
+
+.dp-toast__close:hover { color: var(--dp-text-primary); }

@@ -1,0 +1,43 @@
+<div class="devpilot-project">
+  @if (isLoading()) {
+    <div class="devpilot-project__loading">
+      <div class="dp-skeleton" style="height:40px; width:60%; margin-bottom:16px;"></div>
+      <div class="dp-skeleton" style="height:400px; width:100%;"></div>
+    </div>
+  }
+
+  @if (!isLoading()) {
+    <!-- IDE Layout -->
+    <div class="devpilot-project__layout">
+      <!-- Main Editor Column -->
+      <div class="devpilot-project__editor-col">
+        <!-- Toolbar -->
+        <div class="devpilot-project__toolbar">
+          <div class="devpilot-project__toolbar-left">
+            <span class="devpilot-project__project-name">{{ project()?.name }}</span>
+          </div>
+          <div class="devpilot-project__toolbar-right">
+            <button class="devpilot-project__toolbar-btn" (click)="toggleBottomPanel()" title="Toggle Terminal">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polyline points="4 6 8 10 12 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Editor + Bottom Panel -->
+        <div class="devpilot-project__editor-area">
+          <app-editor [projectName]="project()?.name || ''"></app-editor>
+          @if (bottomPanelOpen()) {
+            <app-bottom-panel></app-bottom-panel>
+          }
+        </div>
+      </div>
+
+      <!-- AI Panel Overlay -->
+      <div class="devpilot-project__ai-col" [class.devpilot-project__ai-col--open]="aiPanelOpen()">
+        <app-ai-assistant [projectName]="project()?.name || ''" (closePanel)="toggleAiPanel()"></app-ai-assistant>
+      </div>
+    </div>
+  }
+</div>

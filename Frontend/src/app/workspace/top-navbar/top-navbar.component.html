@@ -1,0 +1,200 @@
+<nav class="devpilot-navbar">
+  <!-- Left: Logo + Breadcrumb -->
+  <div class="devpilot-navbar__left">
+    <button class="devpilot-navbar__sidebar-toggle" (click)="toggleSidebar.emit()" title="Toggle Sidebar">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <rect x="1" y="3" width="14" height="1.5" rx="0.75"/>
+        <rect x="1" y="7.25" width="14" height="1.5" rx="0.75"/>
+        <rect x="1" y="11.5" width="14" height="1.5" rx="0.75"/>
+      </svg>
+    </button>
+
+    <a routerLink="/dashboard" class="devpilot-navbar__logo">
+      <div class="devpilot-navbar__logo-icon">
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+          <defs>
+            <linearGradient id="nb-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#6366f1"/>
+              <stop offset="100%" stop-color="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="8" fill="url(#nb-grad)"/>
+          <path d="M8 10h4l4 12 4-12h4" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="16" cy="22" r="2" fill="white"/>
+        </svg>
+      </div>
+      <span class="devpilot-navbar__logo-text">DevPilot</span>
+    </a>
+
+    <!-- Breadcrumb / Project Switcher -->
+    @if (projectService.activeProject()) {
+      <div class="devpilot-navbar__breadcrumb">
+        <span class="devpilot-navbar__breadcrumb-sep">/</span>
+        <button class="devpilot-navbar__project-btn" (click)="toggleProjectSwitcher()">
+          {{ projectService.activeProject()?.name }}
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" [class.devpilot-navbar__chevron--open]="projectSwitcherOpen()">
+            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <!-- Project Switcher Dropdown -->
+        @if (projectSwitcherOpen()) {
+          <div class="devpilot-navbar__project-dropdown dp-glass-panel dp-fade-in">
+            <div class="devpilot-navbar__project-dropdown-header">My Projects</div>
+            <div class="devpilot-navbar__project-list">
+              <button class="devpilot-navbar__project-item devpilot-navbar__project-item--active">
+                <span class="devpilot-navbar__project-dot devpilot-navbar__project-dot--active"></span>
+                E-Commerce API
+              </button>
+              <button class="devpilot-navbar__project-item">
+                <span class="devpilot-navbar__project-dot"></span>
+                Portfolio
+              </button>
+              <button class="devpilot-navbar__project-item">
+                <span class="devpilot-navbar__project-dot"></span>
+                DevPilot Backend
+              </button>
+              <button class="devpilot-navbar__project-item">
+                <span class="devpilot-navbar__project-dot"></span>
+                Chat Application
+              </button>
+            </div>
+            <div class="devpilot-navbar__project-new">
+              <button class="devpilot-navbar__project-create">
+                <span>+</span> Create New Project
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Center: Search -->
+  <button class="devpilot-navbar__search" (click)="openSearch()" id="navbar-search-btn">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="6.5" cy="6.5" r="5"/>
+      <path d="M11 11l3 3" stroke-linecap="round"/>
+    </svg>
+    <span class="devpilot-navbar__search-text">Search files, commands, projects...</span>
+    <kbd class="devpilot-navbar__kbd">Ctrl K</kbd>
+  </button>
+
+  <!-- Right: Actions -->
+  <div class="devpilot-navbar__right">
+    <!-- AI Status -->
+    <button class="devpilot-navbar__ai-status" [class.devpilot-navbar__ai-status--active]="aiService.isPanelOpen()" (click)="toggleAiPanel()" title="DevPilot AI">
+      <span class="devpilot-navbar__ai-dot"></span>
+      <span class="devpilot-navbar__ai-label">AI</span>
+    </button>
+
+    <!-- Notifications -->
+    <div class="devpilot-navbar__notif-wrap">
+      <button class="devpilot-navbar__icon-btn" (click)="toggleNotif()" id="notif-btn" [class.devpilot-navbar__icon-btn--active]="notifOpen()" title="Notifications">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M8 2a5 5 0 015 5v3l1 2H2l1-2V7a5 5 0 015-5z" stroke-linecap="round"/>
+          <path d="M6.5 13a1.5 1.5 0 003 0" stroke-linecap="round"/>
+        </svg>
+        @if (unreadCount() > 0) {
+          <span class="devpilot-navbar__badge">{{ unreadCount() }}</span>
+        }
+      </button>
+
+      @if (notifOpen()) {
+        <div class="devpilot-navbar__notif-dropdown dp-glass-panel dp-fade-in">
+          <div class="devpilot-navbar__notif-header">
+            <span>Notifications</span>
+            <div class="devpilot-navbar__notif-actions">
+              <button (click)="markAllRead()">Mark all read</button>
+              <button (click)="clearNotifications()">Clear all</button>
+            </div>
+          </div>
+          @if (notifications().length === 0) {
+            <div class="devpilot-navbar__notif-empty">No notifications</div>
+          }
+          @for (n of notifications(); track n.id) {
+            <div class="devpilot-navbar__notif-item" [class.devpilot-navbar__notif-item--unread]="!n.read">
+              <span class="devpilot-navbar__notif-icon"><lucide-icon [name]="n.icon"></lucide-icon></span>
+              <div class="devpilot-navbar__notif-content">
+                <span class="devpilot-navbar__notif-msg">{{ n.message }}</span>
+                <span class="devpilot-navbar__notif-time">{{ n.time }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Theme Toggle -->
+    <button class="devpilot-navbar__icon-btn" (click)="toggleTheme()" id="theme-toggle-btn" [title]="theme() === 'dark' ? 'Light mode' : 'Dark mode'">
+      @if (theme() === 'dark') {
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 12A4 4 0 108 4a4 4 0 000 8zm0-10V.5M8 14v1.5M2.05 2.05l1.06 1.06M12.89 12.89l1.06 1.06M0.5 8H2M14 8h1.5M2.05 13.95l1.06-1.06M12.89 3.11l1.06-1.06"/>
+        </svg>
+      } @else {
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M6 1.5a6.5 6.5 0 100 13A6.5 6.5 0 006 1.5zm0 11a4.5 4.5 0 010-9 5.5 5.5 0 010 9z"/>
+        </svg>
+      }
+    </button>
+
+    <!-- Help -->
+    <button class="devpilot-navbar__icon-btn" title="Help & Documentation" id="help-btn">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="8" cy="8" r="6.5"/>
+        <path d="M6 6a2 2 0 114 0c0 1-1 1.5-2 2.5" stroke-linecap="round"/>
+        <circle cx="8" cy="12" r="0.75" fill="currentColor"/>
+      </svg>
+    </button>
+
+    <!-- User Profile -->
+    <div class="devpilot-navbar__profile-wrap">
+      <button class="devpilot-navbar__profile-btn" (click)="toggleProfile()" id="profile-btn">
+        @if (currentUser(); as user) {
+          <div class="devpilot-navbar__avatar">{{ getUserInitials(user.name) }}</div>
+          <span class="devpilot-navbar__username">{{ user.name }}</span>
+        } @else {
+          <div class="devpilot-navbar__avatar devpilot-navbar__avatar--default">GK</div>
+          <span class="devpilot-navbar__username">Gopal Kumar</span>
+        }
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" [class.devpilot-navbar__chevron--open]="profileOpen()">
+          <path d="M1.5 3.5l3.5 3 3.5-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      @if (profileOpen()) {
+        <div class="devpilot-navbar__profile-dropdown dp-glass-panel dp-fade-in">
+          <div class="devpilot-navbar__profile-info">
+            <div class="devpilot-navbar__profile-avatar">GK</div>
+            <div>
+              <div class="devpilot-navbar__profile-name">Gopal Kumar</div>
+              <div class="devpilot-navbar__profile-email">gopal&#64;example.com</div>
+            </div>
+          </div>
+          <div class="devpilot-navbar__profile-divider"></div>
+          <button class="devpilot-navbar__profile-item">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14a6 6 0 0112 0"/></svg>
+            Profile
+          </button>
+          <button class="devpilot-navbar__profile-item">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>
+            Settings
+          </button>
+          <button class="devpilot-navbar__profile-item">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 7h6M5 10h4"/></svg>
+            Keyboard Shortcuts
+          </button>
+          <button class="devpilot-navbar__profile-item">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v4M8 11v.5"/></svg>
+            Documentation
+          </button>
+          <div class="devpilot-navbar__profile-divider"></div>
+          <button class="devpilot-navbar__profile-item devpilot-navbar__profile-item--danger" (click)="logout()">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6"/></svg>
+            Logout
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,29 @@
+<aside class="devpilot-authside">
+  <div class="devpilot-authside__glow" aria-hidden="true"></div>
+
+  <a routerLink="/" class="devpilot-authside__brand">
+    <dp-logo [size]="28"></dp-logo>
+  </a>
+
+  <div class="devpilot-authside__copy">
+    <h1>{{ headline }}</h1>
+    <p>{{ message }}</p>
+  </div>
+
+  <div class="devpilot-authside__visual dp-glass">
+    <div class="devpilot-authside__dots">
+      <span></span><span></span><span></span>
+    </div>
+    <pre class="devpilot-authside__code"><code><span class="tok-kw">class</span> <span class="tok-fn">Workspace</span> &#123;
+  <span class="tok-fn">async</span> <span class="tok-fn">build</span>() &#123;
+    <span class="tok-kw">await</span> <span class="tok-var">ai</span>.<span class="tok-fn">generate</span>();
+    <span class="tok-kw">await</span> <span class="tok-var">git</span>.<span class="tok-fn">push</span>();
+    <span class="tok-kw">await</span> <span class="tok-var">deploy</span>.<span class="tok-fn">run</span>();
+  &#125;
+&#125;</code></pre>
+    <div class="devpilot-authside__status">
+      <span class="devpilot-authside__pulse"></span>
+      AI workspace ready
+    </div>
+  </div>
+</aside>

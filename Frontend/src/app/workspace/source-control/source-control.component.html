@@ -1,0 +1,107 @@
+<div class="devpilot-sc">
+  <!-- Header -->
+  <div class="devpilot-sc__header">
+    <span class="devpilot-sc__title">SOURCE CONTROL</span>
+    <div class="devpilot-sc__header-actions">
+      <button class="devpilot-sc__hbtn" title="Refresh" (click)="ngOnInit()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 8a6 6 0 016-6 6.1 6.1 0 014.5 2H11" stroke-linecap="round"/>
+          <path d="M14 8a6 6 0 01-6 6 6.1 6.1 0 01-4.5-2H5" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="devpilot-sc__hbtn" title="Stage All" (click)="stageAll()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 8h12M8 2l4 6-4 6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Branch info -->
+  @if (status()) {
+    <div class="devpilot-sc__branch">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+        <path fill-rule="evenodd" d="M11.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122V6A2.5 2.5 0 0110 8.5H6a1 1 0 00-1 1v1.128a2.251 2.251 0 11-1.5 0V5.372a2.25 2.25 0 111.5 0v1.836A2.492 2.492 0 016 7h4a1 1 0 001-1v-.628A2.25 2.25 0 019.5 3.25zM4.25 12a.75.75 0 100 1.5.75.75 0 000-1.5z"/>
+      </svg>
+      {{ status()?.branch }}
+      @if ((status()?.ahead ?? 0) > 0) {
+        <span class="devpilot-sc__ahead">↑ {{ status()?.ahead }}</span>
+      }
+    </div>
+  }
+
+  <!-- Content scroll area -->
+  <div class="devpilot-sc__content dp-scroll">
+    @if (isLoading()) {
+      <div class="devpilot-sc__loading">
+        <div class="dp-skeleton" style="height:14px; width:80%; margin:8px 12px"></div>
+        <div class="dp-skeleton" style="height:14px; width:60%; margin:6px 12px"></div>
+      </div>
+    }
+
+    @if (!isLoading()) {
+      <!-- Commit box -->
+      <div class="devpilot-sc__commit-box">
+        <textarea
+          class="devpilot-sc__commit-input"
+          [formControl]="commitMessage"
+          placeholder="Commit message..."
+          rows="2"
+        ></textarea>
+        <div class="devpilot-sc__commit-actions">
+          <button
+            class="devpilot-sc__commit-btn"
+            (click)="commit()"
+            [disabled]="!commitMessage.value || isCommitting()"
+          >
+            @if (isCommitting()) { Committing... } @else { ✓ Commit Changes }
+          </button>
+          <button
+            class="devpilot-sc__push-btn"
+            (click)="push()"
+            [disabled]="isPushing()"
+          >
+            @if (isPushing()) { Pushing... } @else { ↑ Push }
+          </button>
+        </div>
+      </div>
+
+      <!-- Staged Changes -->
+      @if (getStagedChanges().length > 0) {
+        <div class="devpilot-sc__section">
+          <div class="devpilot-sc__section-header">
+            STAGED CHANGES ({{ getStagedChanges().length }})
+          </div>
+          @for (change of getStagedChanges(); track change.path) {
+            <div class="devpilot-sc__change">
+              <span class="devpilot-sc__change-name">{{ change.file }}</span>
+              <div class="devpilot-sc__change-actions">
+                <span class="devpilot-sc__badge" [class]="getStatusBadgeClass(change.status)">{{ change.status }}</span>
+                <button class="devpilot-sc__change-btn" (click)="unstageFile(change)" title="Unstage">−</button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Changes -->
+      <div class="devpilot-sc__section">
+        <div class="devpilot-sc__section-header">
+          CHANGES ({{ getUnstagedChanges().length }})
+        </div>
+        @if (getUnstagedChanges().length === 0) {
+          <div class="devpilot-sc__empty">No unstaged changes</div>
+        }
+        @for (change of getUnstagedChanges(); track change.path) {
+          <div class="devpilot-sc__change">
+            <span class="devpilot-sc__change-name">{{ change.file }}</span>
+            <div class="devpilot-sc__change-actions">
+              <span class="devpilot-sc__badge" [class]="getStatusBadgeClass(change.status)">{{ change.status }}</span>
+              <button class="devpilot-sc__change-btn" (click)="stageFile(change)" title="Stage">+</button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

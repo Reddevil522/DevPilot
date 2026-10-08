@@ -1,0 +1,65 @@
+.devpilot-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--dp-statusbar-height);
+  background: var(--dp-statusbar-bg);
+  padding: 0 8px;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.devpilot-statusbar__left,
+.devpilot-statusbar__right {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.devpilot-statusbar__item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 0 7px;
+  height: 100%;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--dp-transition-fast);
+  border-radius: 2px;
+  font-family: var(--dp-font-body);
+}
+
+.devpilot-statusbar__item:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.devpilot-statusbar__item--branch {
+  color: #fff;
+  font-weight: 600;
+}
+
+.devpilot-statusbar__item--error {
+  color: #fca5a5;
+}
+
+.devpilot-statusbar__item--warning {
+  color: #fde68a;
+}
+
+.devpilot-statusbar__item--ai {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: default;
+}
+
+.devpilot-statusbar__ai-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #4ade80;
+}

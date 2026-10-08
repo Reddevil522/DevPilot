@@ -1,0 +1,121 @@
+.devpilot-authside {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  padding: 60px;
+  overflow: hidden;
+}
+
+.devpilot-authside__glow {
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, var(--dp-glow-1), transparent 70%);
+  filter: blur(70px);
+  pointer-events: none;
+}
+
+.devpilot-authside__brand {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: 64px;
+}
+
+.devpilot-authside__copy {
+  position: relative;
+  max-width: 400px;
+  margin-bottom: 48px;
+}
+
+.devpilot-authside__copy h1 {
+  font-size: clamp(1.8rem, 3vw, 2.3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 14px;
+}
+
+.devpilot-authside__copy p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.devpilot-authside__visual {
+  position: relative;
+  border-radius: var(--dp-radius-lg);
+  padding: 18px;
+  max-width: 400px;
+  animation: dp-float 8s ease-in-out infinite;
+}
+
+.devpilot-authside__dots {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.devpilot-authside__dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dp-surface-border);
+}
+
+.devpilot-authside__code {
+  margin: 0 0 14px;
+  font-family: var(--dp-font-mono);
+  font-size: 0.78rem;
+  line-height: 1.8;
+  color: var(--dp-text-secondary);
+  white-space: pre;
+}
+
+.tok-kw { color: #c084fc; }
+.tok-fn { color: #93c5fd; }
+.tok-var { color: #fbbf24; }
+
+.devpilot-authside__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-family: var(--dp-font-mono);
+  color: var(--dp-accent-cyan);
+  border-top: 1px solid var(--dp-surface-border);
+  padding-top: 12px;
+}
+
+.devpilot-authside__pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dp-accent-cyan);
+  box-shadow: 0 0 8px var(--dp-accent-cyan);
+  animation: dp-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes dp-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes dp-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .devpilot-authside__visual,
+  .devpilot-authside__pulse {
+    animation: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .devpilot-authside {
+    display: none;
+  }
+}

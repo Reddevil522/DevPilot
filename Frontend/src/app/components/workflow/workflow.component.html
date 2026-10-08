@@ -1,0 +1,22 @@
+<section id="workflow" class="devpilot-workflow">
+  <div class="dp-container">
+    <h2 class="devpilot-workflow__title">From idea to deployment, in six steps.</h2>
+
+    <ol class="devpilot-workflow__list">
+      @for (step of steps; track step.n; let last = $last) {
+        <li class="devpilot-workflow__step">
+          <div class="devpilot-workflow__marker">
+            <span class="devpilot-workflow__number">{{ step.n }}</span>
+            @if (!last) {
+              <span class="devpilot-workflow__line" aria-hidden="true"></span>
+            }
+          </div>
+          <div class="devpilot-workflow__content dp-glass">
+            <h3>{{ step.title }}</h3>
+            <p>{{ step.desc }}</p>
+          </div>
+        </li>
+      }
+    </ol>
+  </div>
+</section>

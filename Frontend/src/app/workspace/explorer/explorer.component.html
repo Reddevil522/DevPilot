@@ -1,0 +1,104 @@
+<div class="devpilot-explorer" (click)="closeContextMenu()">
+  <!-- Header -->
+  <div class="devpilot-explorer__header">
+    <span class="devpilot-explorer__title">EXPLORER</span>
+    <div class="devpilot-explorer__header-actions">
+      <button class="devpilot-explorer__action-btn" title="New File" (click)="createNewFile()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V6L9 2z"/>
+          <path d="M9 2v4h4"/>
+          <path d="M8 10V8M7 9h2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="devpilot-explorer__action-btn" title="New Folder" (click)="createNewFolder()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M1 3a1 1 0 011-1h4l2 2h6a1 1 0 011 1v7a1 1 0 01-1 1H2a1 1 0 01-1-1V3z"/>
+          <path d="M8 8v2M7 9h2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="devpilot-explorer__action-btn" title="Refresh" (click)="ngOnInit()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 8a6 6 0 016-6 6.1 6.1 0 014.5 2H11" stroke-linecap="round"/>
+          <path d="M14 8a6 6 0 01-6 6 6.1 6.1 0 01-4.5-2H5" stroke-linecap="round"/>
+          <path d="M10.5 4l1.5-2 1.5 2" fill="none" stroke-linecap="round"/>
+          <path d="M5.5 12l-1.5 2-1.5-2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Project Name -->
+  @if (localRootName()) {
+    <div class="devpilot-explorer__project-name">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+        <path d="M2 3l4 3-4 3V3z" />
+      </svg>
+      {{ localRootName().toUpperCase() }} (LOCAL)
+    </div>
+  } @else if (activeProject()) {
+    <div class="devpilot-explorer__project-name">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+        <path d="M2 3l4 3-4 3V3z" />
+      </svg>
+      {{ activeProject()?.name?.toUpperCase() }}
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="devpilot-explorer__loading">
+      <div class="dp-skeleton" style="height:14px; width:80%; margin:8px 12px"></div>
+      <div class="dp-skeleton" style="height:14px; width:60%; margin:6px 24px"></div>
+      <div class="dp-skeleton" style="height:14px; width:70%; margin:6px 24px"></div>
+      <div class="dp-skeleton" style="height:14px; width:50%; margin:6px 24px"></div>
+    </div>
+  }
+
+  <!-- File Tree -->
+  @if (!isLoading()) {
+    <div class="devpilot-explorer__tree dp-scroll">
+      <ng-container *ngTemplateOutlet="fileTree; context: { $implicit: files(), depth: 0 }"></ng-container>
+    </div>
+  }
+
+  <!-- Context Menu -->
+  @if (contextMenuFile()) {
+    <div
+      class="devpilot-explorer__context-menu dp-glass-panel"
+      [style.left.px]="contextMenuPos().x"
+      [style.top.px]="contextMenuPos().y"
+    >
+      <button class="devpilot-explorer__ctx-item">Open</button>
+      <button class="devpilot-explorer__ctx-item">Rename</button>
+      <button class="devpilot-explorer__ctx-item">Copy Path</button>
+      <div class="devpilot-explorer__ctx-divider"></div>
+      <button class="devpilot-explorer__ctx-item devpilot-explorer__ctx-item--danger" (click)="deleteContextNode()">Delete</button>
+    </div>
+  }
+</div>
+
+<!-- Recursive file tree template -->
+<ng-template #fileTree let-nodes let-depth="depth">
+  @for (node of nodes; track node.path) {
+    <div
+      class="devpilot-explorer__node"
+      [style.padding-left.px]="12 + depth * 12"
+      [class.devpilot-explorer__node--selected]="selectedFile() === node.path"
+      [class.devpilot-explorer__node--folder]="node.type === 'folder'"
+      (click)="selectFile(node)"
+      (contextmenu)="onContextMenu($event, node)"
+    >
+      <span class="devpilot-explorer__node-chevron" *ngIf="node.type === 'folder'">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" [class.devpilot-explorer__chevron--open]="node.isOpen">
+          <path d="M3 2l4 3-4 3V2z"/>
+        </svg>
+      </span>
+      <span class="devpilot-explorer__node-icon"><lucide-icon [name]="getFileIcon(node)" [size]="14"></lucide-icon></span>
+      <span class="devpilot-explorer__node-name">{{ node.name }}</span>
+    </div>
+
+    @if (node.type === 'folder' && node.isOpen && node.children) {
+      <ng-container *ngTemplateOutlet="fileTree; context: { $implicit: node.children, depth: depth + 1 }"></ng-container>
+    }
+  }
+</ng-template>

@@ -1,0 +1,111 @@
+<div class="devpilot-docs dp-scroll">
+
+  <!-- GRID VIEW -->
+  @if (view() === 'grid') {
+    <div class="devpilot-docs__header dp-fade-in">
+      <div>
+        <h1 class="devpilot-docs__title">Project Documentation</h1>
+        <p class="devpilot-docs__subtitle">Manage and generate documentation for your project</p>
+      </div>
+      <button class="devpilot-docs__generate-btn" (click)="openGenerator()" id="generate-docs-btn">
+        <lucide-icon name="sparkles" [style]="{'width': '14px', 'height': '14px', 'margin-right': '6px'}"></lucide-icon> Generate with AI
+      </button>
+    </div>
+
+    <div class="devpilot-docs__grid dp-fade-in">
+      @for (card of docCards; track card.title) {
+        <div class="devpilot-docs__card dp-glass">
+          <div class="devpilot-docs__card-icon"><lucide-icon [name]="card.icon"></lucide-icon></div>
+          <div class="devpilot-docs__card-info">
+            <div class="devpilot-docs__card-title">{{ card.title }}</div>
+            <div class="devpilot-docs__card-desc">{{ card.description }}</div>
+            @if (card.lastGenerated) {
+              <div class="devpilot-docs__card-date">Last generated {{ card.lastGenerated }}</div>
+            }
+          </div>
+          <div class="devpilot-docs__card-actions">
+            <button class="devpilot-docs__card-btn" (click)="openGenerator(card.type)"><lucide-icon name="sparkles" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Generate</button>
+            <button class="devpilot-docs__card-btn devpilot-docs__card-btn--secondary">Edit</button>
+            <button class="devpilot-docs__card-btn devpilot-docs__card-btn--secondary">Export</button>
+          </div>
+        </div>
+      }
+
+      <!-- Empty state card -->
+      <div class="devpilot-docs__empty-card dp-glass">
+        <div class="devpilot-docs__empty-icon"><lucide-icon name="file-text" [style]="{'width': '48px', 'height': '48px'}"></lucide-icon></div>
+        <div class="devpilot-docs__empty-title">No documentation yet</div>
+        <p class="devpilot-docs__empty-desc">Let DevPilot AI generate documentation for your project.</p>
+        <button class="devpilot-docs__generate-btn devpilot-docs__generate-btn--sm" (click)="openGenerator()">
+          <lucide-icon name="sparkles" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Generate with AI
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- GENERATOR VIEW -->
+  @if (view() === 'generator') {
+    <div class="devpilot-docs__generator dp-fade-in">
+      <div class="devpilot-docs__generator-header">
+        <button class="devpilot-docs__back-btn" (click)="backToGrid()"><lucide-icon name="arrow-left" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Back</button>
+        <h2 class="devpilot-docs__generator-title">Generate Documentation</h2>
+      </div>
+
+      @if (!isGenerating()) {
+        <div class="devpilot-docs__generator-form dp-glass">
+          <div class="devpilot-docs__form-label">Documentation Type</div>
+          <div class="devpilot-docs__type-grid">
+            @for (type of docTypes; track type.value) {
+              <label class="devpilot-docs__type-option" [class.devpilot-docs__type-option--active]="selectedType.value === type.value">
+                <input type="radio" [formControl]="selectedType" [value]="type.value" />
+                <div class="devpilot-docs__type-name">{{ type.label }}</div>
+                <div class="devpilot-docs__type-desc">{{ type.desc }}</div>
+              </label>
+            }
+          </div>
+          <button class="devpilot-docs__generate-btn" (click)="generate()" id="start-generation-btn">
+            <lucide-icon name="sparkles" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Generate with AI
+          </button>
+        </div>
+      }
+
+      @if (isGenerating()) {
+        <div class="devpilot-docs__progress dp-glass dp-fade-in">
+          <div class="devpilot-docs__progress-spinner">
+            <div class="devpilot-docs__spinner-ring"></div>
+            <span><lucide-icon name="sparkles" [style]="{'width': '16px', 'height': '16px'}"></lucide-icon></span>
+          </div>
+          <div class="devpilot-docs__progress-steps">
+            @for (step of generationSteps; track $index; let i = $index) {
+              <div class="devpilot-docs__step" [class.devpilot-docs__step--done]="currentStep() > i" [class.devpilot-docs__step--active]="currentStep() === i">
+                <span class="devpilot-docs__step-icon">
+                  @if (currentStep() > i) { <lucide-icon name="check-circle" [style]="{'width':'16px','height':'16px', 'stroke':'var(--dp-accent-green)'}"></lucide-icon> } @else if (currentStep() === i) { <lucide-icon name="clock" [style]="{'width':'16px','height':'16px', 'stroke':'var(--dp-accent)'}"></lucide-icon> } @else { <lucide-icon name="circle" [style]="{'width':'16px','height':'16px'}"></lucide-icon> }
+                </span>
+                {{ step }}
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- VIEWER VIEW -->
+  @if (view() === 'viewer' && generatedContent()) {
+    <div class="devpilot-docs__viewer dp-fade-in">
+      <div class="devpilot-docs__viewer-toolbar">
+        <button class="devpilot-docs__back-btn" (click)="backToGrid()"><lucide-icon name="arrow-left" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Back</button>
+        <span class="devpilot-docs__viewer-title">Generated Documentation</span>
+        <div class="devpilot-docs__viewer-actions">
+          <button class="devpilot-docs__card-btn"><lucide-icon name="copy" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Copy</button>
+          <button class="devpilot-docs__card-btn"><lucide-icon name="download" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Export</button>
+          <button class="devpilot-docs__generate-btn devpilot-docs__generate-btn--sm" (click)="openGenerator()"><lucide-icon name="sparkles" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Regenerate</button>
+        </div>
+      </div>
+      <div class="devpilot-docs__doc-content dp-glass dp-scroll">
+        <pre class="devpilot-docs__doc-pre">{{ generatedContent() }}</pre>
+      </div>
+    </div>
+  }
+
+</div>

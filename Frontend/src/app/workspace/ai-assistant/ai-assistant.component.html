@@ -1,0 +1,133 @@
+<div class="devpilot-ai">
+  <!-- Header -->
+  <div class="devpilot-ai__header">
+    <div class="devpilot-ai__header-info">
+      <div class="devpilot-ai__header-logo"><lucide-icon name="bot" [style]="{'width': '20px', 'height': '20px'}"></lucide-icon></div>
+      <div class="devpilot-ai__header-text">
+        <div class="devpilot-ai__title">
+          DevPilot AI
+          <span class="devpilot-ai__status-wrap" title="{{ isThinking() ? 'Thinking...' : 'Online' }}">
+            <span class="devpilot-ai__status-dot" [class.devpilot-ai__status-dot--thinking]="isThinking()"></span>
+            <span class="devpilot-ai__status-text">{{ isThinking() ? 'Thinking...' : 'Online' }}</span>
+          </span>
+        </div>
+        <div class="devpilot-ai__subtitle">AI Coding Assistant</div>
+      </div>
+    </div>
+    <div class="devpilot-ai__header-actions">
+      <button class="devpilot-ai__header-btn" (click)="clearChat()" title="Clear chat">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <polyline points="3 6 5 20 19 20 21 6 3 6"/><path d="M8 6V4a2 2 0 012-2h0a2 2 0 012 2v2" stroke-linecap="round"/>
+          <line x1="10" y1="11" x2="10" y2="17"/><line x1="7" y1="11" x2="7.5" y2="17"/>
+        </svg>
+      </button>
+      <button class="devpilot-ai__header-btn" (click)="closePanel.emit()" title="Close AI">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 4L4 12M4 4l8 8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Context Banner -->
+  <div class="devpilot-ai__context">
+    <span class="devpilot-ai__context-label">Using</span>
+    <span class="devpilot-ai__context-tag">
+      <span class="devpilot-ai__context-dot devpilot-ai__context-dot--file"></span>
+      {{ context().currentFile || 'app.ts' }}
+    </span>
+    <span class="devpilot-ai__context-tag">
+      <span class="devpilot-ai__context-dot devpilot-ai__context-dot--project"></span>
+      {{ context().projectName || projectName || 'Project' }}
+    </span>
+  </div>
+
+  <!-- Messages -->
+  <div class="devpilot-ai__messages dp-scroll">
+    @for (msg of messages(); track msg.id) {
+      <div class="devpilot-ai__message devpilot-ai__message--{{ msg.role }}">
+        @if (msg.role === 'assistant') {
+          <div class="devpilot-ai__avatar"><lucide-icon name="bot" [style]="{'width': '16px', 'height': '16px'}"></lucide-icon></div>
+        }
+        <div class="devpilot-ai__bubble">
+          <div class="devpilot-ai__content" [innerHTML]="formatContent(msg.content)"></div>
+          <div class="devpilot-ai__timestamp">{{ msg.timestamp | date:'HH:mm' }}</div>
+        </div>
+        @if (msg.role === 'user') {
+          <div class="devpilot-ai__avatar devpilot-ai__avatar--user">G</div>
+        }
+      </div>
+    }
+
+    <!-- Thinking indicator -->
+    @if (isThinking()) {
+      <div class="devpilot-ai__message devpilot-ai__message--assistant">
+        <div class="devpilot-ai__avatar"><lucide-icon name="bot" [style]="{'width': '16px', 'height': '16px'}"></lucide-icon></div>
+        <div class="devpilot-ai__bubble devpilot-ai__bubble--thinking">
+          <div class="devpilot-ai__thinking-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <div #messagesEnd></div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="devpilot-ai__quick-actions-container">
+    <div class="devpilot-ai__quick-actions-header" (click)="toggleQuickActions()">
+      <span>Suggested Actions</span>
+      <button 
+        type="button" 
+        class="devpilot-ai__quick-actions-toggle"
+        [class.devpilot-ai__quick-actions-toggle--collapsed]="!quickActionsExpanded()"
+        [attr.aria-expanded]="quickActionsExpanded()"
+        aria-label="Toggle Suggested Actions"
+        (click)="$event.stopPropagation(); toggleQuickActions()"
+      >
+        <lucide-icon 
+          name="chevron-up" 
+          [style]="{'width': '16px', 'height': '16px'}"
+        ></lucide-icon>
+      </button>
+    </div>
+    
+    <div class="devpilot-ai__quick-actions" *ngIf="quickActionsExpanded()">
+      @for (action of quickActions; track action.label) {
+        <button class="devpilot-ai__action" (click)="sendMessage(action.prompt)" [disabled]="isThinking()">
+          <span class="devpilot-ai__action-label">{{ action.label }}</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Input Composer -->
+  <div class="devpilot-ai__composer-wrap">
+    <div class="devpilot-ai__composer">
+      <textarea
+        class="devpilot-ai__input"
+        [formControl]="inputControl"
+        placeholder="Ask DevPilot AI..."
+        rows="1"
+        (keydown)="onKeydown($event)"
+        (input)="autoResize($event)"
+        id="ai-input"
+      ></textarea>
+      <div class="devpilot-ai__composer-actions">
+        <button class="devpilot-ai__attach-btn" title="Attach file">
+          <lucide-icon name="paperclip" [style]="{'width': '14px', 'height': '14px'}"></lucide-icon>
+        </button>
+        <button
+          class="devpilot-ai__send-btn"
+          (click)="sendMessage()"
+          [disabled]="!inputControl.value || isThinking()"
+          id="ai-send-btn"
+          title="Send Message"
+        >
+          <lucide-icon name="send" [style]="{'width': '14px', 'height': '14px'}"></lucide-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
