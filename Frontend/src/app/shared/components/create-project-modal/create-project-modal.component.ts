@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { finalize, Subscription } from 'rxjs';
 import { ProjectService } from '../../../core/services/project.service';
 import { Project, CreateProjectPayload } from '../../models/project.model';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -36,6 +37,8 @@ export class CreateProjectModalComponent {
   readonly creatingSteps = signal<string[]>([]);
   readonly currentStep = signal(-1);
   readonly createdProject = signal<Project | null>(null);
+  readonly isSelectingFolder = signal(false);
+  readonly isBrowsing = this.isSelectingFolder;
 
   readonly form = this.fb.group({
     name: ['my-awesome-project', [Validators.required, Validators.pattern(/^[a-z0-9-]+$/)]],
@@ -67,6 +70,8 @@ export class CreateProjectModalComponent {
   ];
 
   close(): void {
+    this.isSelectingFolder.set(false);
+
     if (this.step() !== 'creating') {
       this.step.set('form');
       this.currentStep.set(-1);
@@ -85,17 +90,36 @@ export class CreateProjectModalComponent {
     this.currentStep.set(0);
     this.creatingSteps.set(['Starting project generation...']);
 
-    const payload = this.form.getRawValue() as CreateProjectPayload;
+    const raw = this.form.getRawValue();
+    let technology = raw.technology as any;
+    if (raw.template === 'angular' || raw.template === 'mean') technology = 'angular';
+    else if (raw.template === 'mern') technology = 'react';
+    else if (raw.template === 'node-api') technology = 'nodejs';
+    else if (raw.template === 'ai-app') technology = 'fullstack';
+    else if (raw.template === 'blank') technology = 'custom';
 
-    this.projectService.createProject(payload).subscribe({
-      next: (project: Project) => {
-        this.currentStep.set(this.creatingSteps().length - 1);
-        this.createdProject.set(project);
+    const payload: CreateProjectPayload = {
+      name: raw.name?.trim() || '',
+      description: raw.description?.trim() || '',
+      technology,
+      template: raw.template as any,
+      projectType: 'local',
+      localPath: raw.localPath?.trim() || ''
+    };
 
-        setTimeout(() => {
-          this.step.set('success');
-          this.notifService.show(`Project "${project.name}" created!`, 'success');
-        }, 800);
+    this.projectService.createProjectWithProgress(payload).subscribe({
+      next: (event: any) => {
+        if (event.type === 'progress') {
+          this.creatingSteps.update(steps => [...steps, event.message]);
+          this.currentStep.set(this.creatingSteps().length - 1);
+        } else if (event.type === 'complete') {
+          const project = event.project;
+          this.createdProject.set(project);
+          setTimeout(() => {
+            this.step.set('success');
+            this.notifService.show(`Project "${project.name}" created!`, 'success');
+          }, 600);
+        }
       },
       error: (err: any) => {
         console.error(err);
@@ -112,4 +136,43 @@ export class CreateProjectModalComponent {
       this.close();
     }
   }
+
+  /**
+   * Deterministic, VS Code-style "Select Folder" handler.
+   * Invokes native Windows directory picker via backend bridge.
+   * Immediately updates local path on selection.
+   * Preserves current path on cancel.
+   * Always resets isSelectingFolder in finally block.
+   */
+  async onSelectFolder(): Promise<void> {
+    if (this.isSelectingFolder()) return; // Prevent double-triggering
+
+    const t0 = performance.now();
+    console.log(`[PERF][SelectFolder] T0 — click`);
+
+    this.isSelectingFolder.set(true);
+    try {
+      const initialPath = this.form.controls.localPath.value?.trim() || '';
+      const selected = await this.projectService.selectFolder(initialPath);
+
+      console.log(`[PERF][SelectFolder] T1 — completed in ${(performance.now() - t0).toFixed(1)}ms (path: "${selected || 'cancelled'}")`);
+
+      if (selected) {
+        this.form.patchValue({ localPath: selected });
+        this.form.controls.localPath.markAsTouched();
+      }
+      // If cancelled (null), existing path remains completely untouched.
+    } catch (err) {
+      console.error('[SelectFolder] Unexpected error:', err);
+      this.notifService.show('Unable to open the folder selector.', 'error');
+    } finally {
+      this.isSelectingFolder.set(false);
+    }
+  }
+
+  // Alias for backward compatibility with templates
+  onBrowseDirectory(): void {
+    this.onSelectFolder();
+  }
+
 }

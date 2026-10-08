@@ -81,7 +81,13 @@ export class DashboardComponent implements OnInit {
         this.projectToDelete.set(null);
       },
       error: (err) => {
-        this.notifService.show(`Failed to delete project: ${err.message}`, 'error');
+        if (err.status === 404) {
+          // Project was already deleted from backend — remove from local UI list
+          this.projects.update(projs => projs.filter(p => p.id !== project.id));
+          this.notifService.show(`Project "${project.name}" removed.`, 'info');
+        } else {
+          this.notifService.show(`Failed to delete project: ${err.error?.message || err.message}`, 'error');
+        }
         this.projectToDelete.set(null);
       }
     });

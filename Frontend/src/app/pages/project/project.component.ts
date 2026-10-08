@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { ProjectService } from '../../core/services/project.service';
 import { AiService } from '../../core/services/ai.service';
+import { WorkspaceService } from '../../core/services/workspace.service';
 import { Project } from '../../shared/models/project.model';
 import { AiAssistantComponent } from '../../workspace/ai-assistant/ai-assistant.component';
 import { EditorComponent } from '../../workspace/editor/editor.component';
@@ -19,6 +20,7 @@ import { SharedIconsModule } from '../../shared/shared-icons.module';
 export class ProjectComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private projectService = inject(ProjectService);
+  private workspaceService = inject(WorkspaceService);
   private aiService = inject(AiService);
 
   readonly project = signal<Project | null>(null);
@@ -32,6 +34,7 @@ export class ProjectComponent implements OnInit {
       if (p) {
         this.project.set(p);
         this.projectService.setActiveProject(p);
+        this.workspaceService.openProject(p);
         this.aiService.updateContext({ projectName: p.name, projectId: p.id });
       }
       this.isLoading.set(false);

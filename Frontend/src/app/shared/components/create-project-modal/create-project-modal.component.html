@@ -63,18 +63,48 @@
 
 
 
-          <!-- Local Path -->
+          <!-- Local Directory -->
           <div class="dp-cpmodal__field dp-fade-in">
-            <label class="dp-cpmodal__label" for="proj-local-path">Local Directory Path</label>
-            <input
-              id="proj-local-path"
-              class="dp-cpmodal__input"
-              [class.dp-cpmodal__input--error]="form.controls.localPath.touched && form.controls.localPath.invalid"
-              type="text"
-              formControlName="localPath"
-              placeholder="D:\Projects or /Users/name/Projects"
-              autocomplete="off"
-            />
+            <div class="dp-cpmodal__field-header">
+              <label class="dp-cpmodal__label" for="proj-local-path">Local Directory</label>
+              <span class="dp-cpmodal__field-hint">Physical location on your machine</span>
+            </div>
+            <div class="dp-cpmodal__path-control" [class.dp-cpmodal__path-control--busy]="isSelectingFolder()">
+              <div class="dp-cpmodal__path-wrapper">
+                <lucide-icon name="folder" class="dp-cpmodal__path-icon"></lucide-icon>
+                <input
+                  id="proj-local-path"
+                  class="dp-cpmodal__input dp-cpmodal__path-input"
+                  [class.dp-cpmodal__input--error]="form.controls.localPath.touched && form.controls.localPath.invalid"
+                  type="text"
+                  formControlName="localPath"
+                  placeholder="D:\Projects"
+                  autocomplete="off"
+                  spellcheck="false"
+                  aria-label="Local directory path"
+                />
+              </div>
+              <button
+                type="button"
+                id="proj-browse-btn"
+                class="dp-cpmodal__browse-btn"
+                [class.dp-cpmodal__browse-btn--busy]="isSelectingFolder()"
+                (click)="onSelectFolder()"
+                (keydown.enter)="$event.preventDefault(); onSelectFolder()"
+                (keydown.space)="$event.preventDefault(); onSelectFolder()"
+                [disabled]="isSelectingFolder()"
+                title="Select folder on local machine"
+                aria-label="Select folder"
+              >
+                @if (isSelectingFolder()) {
+                  <lucide-icon name="loader" class="dp-cpmodal__btn-icon dp-spin-fast"></lucide-icon>
+                  <span>Selecting…</span>
+                } @else {
+                  <lucide-icon name="folder" class="dp-cpmodal__btn-icon"></lucide-icon>
+                  <span>Select Folder</span>
+                }
+              </button>
+            </div>
             @if (form.controls.localPath.touched && form.controls.localPath.errors?.['required']) {
               <span class="dp-cpmodal__error">Local path is required</span>
             }

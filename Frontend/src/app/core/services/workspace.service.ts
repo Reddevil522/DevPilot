@@ -25,10 +25,13 @@ export class WorkspaceService {
     this.closeProject();
     this.activeProject.set(project);
 
+    // Kick off file tree loading and watcher concurrently — neither waits for the other.
+    // Explorer renders as soon as the shallow tree arrives; watcher connects in the background.
     this.projectService.getProjectFiles(project.id).subscribe(tree => {
       this.fileTree.set(tree);
-      this.startWatcher(project.id);
     });
+
+    this.startWatcher(project.id);
   }
 
   closeProject() {

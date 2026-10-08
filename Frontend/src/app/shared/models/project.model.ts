@@ -4,15 +4,20 @@ export type ProjectTemplate = 'blank' | 'mean' | 'mern' | 'angular' | 'node-api'
 
 export interface Project {
   id: string;
+  projectId?: string;
   name: string;
+  projectName?: string;
   description: string;
   technology: ProjectTechnology;
+  framework?: string;
   template: ProjectTemplate;
   projectType: 'local' | 'cloud';
   status: ProjectStatus;
   language: string;
-  updatedAt: Date;
-  createdAt: Date;
+  localPath?: string;
+  lastOpenedAt?: Date | string;
+  updatedAt: Date | string;
+  createdAt: Date | string;
   deploymentUrl?: string;
   gitBranch?: string;
   gitRepo?: string;
@@ -34,5 +39,7 @@ export interface FileNode {
   extension?: string;
   children?: FileNode[];
   isOpen?: boolean;
+  /** True once the folder's immediate children have been lazily fetched. */
+  childrenLoaded?: boolean;
   handle?: any; // FileSystemHandle or FileSystemDirectoryHandle
 }

@@ -106,6 +106,178 @@
   font-size: 11px; color: var(--dp-accent-red);
 }
 
+/* Local Directory & Modern IDE Select Folder */
+.dp-cpmodal__field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.dp-cpmodal__field-hint {
+  font-size: 11px;
+  color: var(--dp-text-tertiary);
+  font-weight: 400;
+}
+
+.dp-cpmodal__path-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.dp-cpmodal__path-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  background: var(--dp-surface);
+  border: 1px solid var(--dp-surface-border);
+  border-radius: var(--dp-radius-xs);
+  padding: 0 10px;
+  box-sizing: border-box;
+  transition:
+    border-color var(--dp-transition-fast),
+    box-shadow var(--dp-transition-fast),
+    background var(--dp-transition-fast);
+}
+
+.dp-cpmodal__path-wrapper:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.dp-cpmodal__path-wrapper:focus-within {
+  border-color: var(--dp-accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  background: var(--dp-surface-strong);
+}
+
+.dp-cpmodal__path-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  color: var(--dp-accent);
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.dp-cpmodal__path-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  outline: none !important;
+  font-family: var(--dp-font-mono);
+  font-size: 13px;
+  color: var(--dp-text-primary);
+  text-overflow: ellipsis;
+}
+
+.dp-cpmodal__path-input::placeholder {
+  color: var(--dp-text-tertiary);
+  font-family: var(--dp-font-body);
+}
+
+.dp-cpmodal__browse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  font-family: var(--dp-font-body);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--dp-text-primary);
+  background: var(--dp-surface-strong);
+  border: 1px solid var(--dp-surface-border);
+  border-radius: var(--dp-radius-xs);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  outline: none;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 100ms ease;
+}
+
+.dp-cpmodal__browse-icon,
+.dp-cpmodal__btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  color: var(--dp-accent);
+  transition: color 150ms ease, transform 150ms ease;
+  flex-shrink: 0;
+}
+
+/* Hover state */
+.dp-cpmodal__browse-btn:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #ffffff;
+}
+
+.dp-cpmodal__browse-btn:hover:not(:disabled) .dp-cpmodal__btn-icon,
+.dp-cpmodal__browse-btn:hover:not(:disabled) .dp-cpmodal__browse-icon {
+  color: #a5b4fc;
+  transform: translateY(-0.5px);
+}
+
+/* Active / Pressed state */
+.dp-cpmodal__browse-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  background: rgba(99, 102, 241, 0.2);
+  border-color: var(--dp-accent);
+}
+
+/* Keyboard focus state */
+.dp-cpmodal__browse-btn:focus-visible {
+  border-color: var(--dp-accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+/* Disabled & In-flight states */
+.dp-cpmodal__browse-btn:disabled,
+.dp-cpmodal__browse-btn--busy,
+.dp-cpmodal__browse-btn--browsing {
+  opacity: 0.75;
+  cursor: wait;
+  transform: none;
+  background: var(--dp-surface);
+  border-color: var(--dp-surface-border);
+}
+
+.dp-spin-fast {
+  animation: dp-spin 0.8s linear infinite;
+}
+
+@media (max-width: 520px) {
+  .dp-cpmodal__path-control {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dp-cpmodal__browse-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Grid: technology options */
 .dp-cpmodal__grid {
   display: grid;

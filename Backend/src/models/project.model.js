@@ -32,7 +32,7 @@ const projectSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Project type is required'],
       enum: ['local', 'cloud'],
-      default: 'cloud',
+      default: 'local',
     },
     status: {
       type: String,
@@ -45,6 +45,10 @@ const projectSchema = new mongoose.Schema(
     },
     localPath: {
       type: String,
+    },
+    lastOpenedAt: {
+      type: Date,
+      default: Date.now,
     },
     deploymentUrl: {
       type: String,
@@ -94,9 +98,21 @@ const projectSchema = new mongoose.Schema(
 // Compound unique index for ownerId and slug
 projectSchema.index({ ownerId: 1, slug: 1 }, { unique: true });
 
-// Virtual for frontend compatibility
+// Virtuals for frontend & metadata compatibility
 projectSchema.virtual('id').get(function () {
   return this._id.toHexString();
+});
+
+projectSchema.virtual('projectId').get(function () {
+  return this._id.toHexString();
+});
+
+projectSchema.virtual('projectName').get(function () {
+  return this.name;
+});
+
+projectSchema.virtual('framework').get(function () {
+  return this.technology;
 });
 
 module.exports = mongoose.model('Project', projectSchema);

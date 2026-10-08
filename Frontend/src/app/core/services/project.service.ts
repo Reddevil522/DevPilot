@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, from, of, switchMap, catchError, map, tap } from 'rxjs';
+import { Observable, from, of, switchMap, catchError, map, tap, firstValueFrom } from 'rxjs';
 import {
   Project,
   CreateProjectPayload,
@@ -45,6 +45,26 @@ export class ProjectService {
         return of([]);
       })
     );
+  }
+
+  /**
+   * Lazily fetch the immediate children of a folder within a project.
+   * Called by the Explorer when the user expands a folder for the first time.
+   */
+  getDirectoryChildren(projectId: string, folderPath: string): Observable<FileNode[]> {
+    const encodedPath = encodeURIComponent(folderPath);
+    return this.http
+      .get<{success: boolean, data: FileNode[]}>(
+        `${this.apiUrl}/${projectId}/files/children?path=${encodedPath}`,
+        { withCredentials: true }
+      )
+      .pipe(
+        map(response => response.data),
+        catchError(error => {
+          console.error(`Failed to load children for "${folderPath}":`, error);
+          return of([]);
+        })
+      );
   }
 
   createProject(payload: CreateProjectPayload): Observable<Project> {
@@ -164,5 +184,52 @@ export class ProjectService {
 
   setActiveProject(project: Project): void {
     this.activeProject.set(project);
+  }
+
+  /**
+   * Open the native OS folder picker.
+   * Returns { success: true, path: string } on selection,
+   * or { success: true, path: null } when the user cancels.
+   * Errors only on actual failures (dialog could not open).
+   */
+  selectDirectory(initialPath?: string): Observable<{success: boolean, path?: string | null}> {
+    const url = initialPath
+      ? `${this.apiUrl}/system/select-directory?initialPath=${encodeURIComponent(initialPath)}`
+      : `${this.apiUrl}/system/select-directory`;
+    return this.http
+      .get<{success: boolean, path?: string | null}>(
+        url,
+        { withCredentials: true }
+      )
+      .pipe(
+        catchError(error => {
+          console.error('Failed to select directory:', error);
+          return of({ success: false });
+        })
+      );
+  }
+
+  /**
+   * Clean, deterministic native folder picker.
+   * Resolves with the selected absolute directory path,
+   * or null if the user cancelled or closed the picker.
+   * Never hangs or rejects.
+   */
+  async selectFolder(initialPath?: string): Promise<string | null> {
+    try {
+      const url = initialPath
+        ? `${this.apiUrl}/system/select-directory?initialPath=${encodeURIComponent(initialPath)}`
+        : `${this.apiUrl}/system/select-directory`;
+      const res = await firstValueFrom(
+        this.http.get<{ success: boolean; path?: string | null }>(url, { withCredentials: true })
+      );
+      if (res && res.success && res.path) {
+        return res.path;
+      }
+      return null;
+    } catch (err) {
+      console.error('[ProjectService] Error selecting folder:', err);
+      return null;
+    }
   }
 }

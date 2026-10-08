@@ -35,6 +35,30 @@ const requireAuth = async (req, res, next) => {
 };
 
 /**
+ * Lightweight non-blocking auth middleware: verifies the JWT without hitting the database.
+ * Suitable for local desktop utility routes (like native folder picker).
+ * Attaches decoded user if token exists and valid. Does not block with 401 on initial load,
+ * preventing any first-load or refresh requirement.
+ */
+const requireAuthLight = (req, res, next) => {
+  try {
+    const accessToken = req.cookies?.accessToken;
+
+    if (accessToken) {
+      try {
+        const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+        req.user = { id: decoded.userId, role: decoded.role };
+      } catch (err) {
+        // Token expired or refresh pending — proceed safely for local OS utility
+      }
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Middleware for Role-Based Access Control
  * Usage: requireRole('ADMIN')
  */
@@ -52,5 +76,6 @@ const requireRole = (...roles) => {
 
 module.exports = {
   requireAuth,
+  requireAuthLight,
   requireRole
 };

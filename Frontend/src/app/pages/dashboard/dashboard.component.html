@@ -66,6 +66,11 @@
             <div class="devpilot-dashboard__project-icon"><lucide-icon [name]="getTechIcon(project.technology)"></lucide-icon></div>
             <div class="devpilot-dashboard__project-info">
               <div class="devpilot-dashboard__project-name">{{ project.name }}</div>
+              @if (project.localPath) {
+                <div class="devpilot-dashboard__project-path" [title]="project.localPath" style="font-size: 11px; color: var(--dp-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; margin-top: 2px;">
+                  {{ project.localPath }}
+                </div>
+              }
               <div class="devpilot-dashboard__project-tech">{{ project.language }}</div>
               <div class="devpilot-dashboard__project-meta">
                 <span class="devpilot-dashboard__project-updated">Updated {{ getRelativeTime(project.updatedAt) }}</span>

@@ -56,12 +56,17 @@ class WatcherService extends EventEmitter {
     });
   }
 
-  stop() {
+  async stop() {
     if (this.watcher) {
       console.log(`[Watcher] Stopping watcher for: ${this.currentProjectRoot}`);
-      this.watcher.close();
+      const w = this.watcher;
       this.watcher = null;
       this.currentProjectRoot = null;
+      try {
+        await w.close();
+      } catch (err) {
+        console.warn('[Watcher] Error closing watcher:', err);
+      }
     }
   }
 }
