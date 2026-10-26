@@ -19,12 +19,100 @@ class ExpressTemplate extends BaseTemplate {
     await this.createDirectories(targetDir, dirs);
     await this.generateExpressFiles(targetDir);
 
+    // Helpers that are not wired into app.js, so the existing server behaviour is unchanged
+    await this.createFile(targetDir, 'src/utils/asyncHandler.js', [
+      '// Wrap async route handlers so rejected promises reach the error middleware.',
+      '// Usage: router.get(\'/\', asyncHandler(controller.list));',
+      'module.exports = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);',
+      ''
+    ].join('\n'));
+
+    // Keep empty folders in git
+    await this.createGitkeeps(targetDir, [
+      'src/models',
+      'src/services',
+      'src/validators',
+      'src/constants'
+    ]);
+    await this.generateEditorConfig(targetDir);
+
     if (isStandalone) {
       await this.generateRootGitignore();
-      await this.generateRootReadme(`# ${this.projectName}\n\nExpress + Node.js Backend API.\n\n## Architecture\n- \`src/config/\`: Database connection\n- \`src/controllers/\`: Request/response handling\n- \`src/models/\`: Database models\n- \`src/routes/\`: Express routes\n- \`src/services/\`: Business logic\n- \`src/middleware/\`: Express middleware\n- \`src/validators/\`: Request validation\n\nRequest flow: Route -> Middleware -> Controller -> Service -> Model -> Database\n`);
+      await this.generateRootReadme(this.buildReadme(this.projectName));
     } else {
-      await this.createFile(targetDir, 'README.md', `# Backend\n\nExpress + Node.js Backend API.\n\n## Architecture\n- \`src/config/\`: Database connection\n- \`src/controllers/\`: Request/response handling\n- \`src/models/\`: Database models\n- \`src/routes/\`: Express routes\n- \`src/services/\`: Business logic\n- \`src/middleware/\`: Express middleware\n- \`src/validators/\`: Request validation\n\nRequest flow: Route -> Middleware -> Controller -> Service -> Model -> Database\n`);
+      await this.createFile(targetDir, 'README.md', this.buildReadme('Backend'));
     }
+  }
+
+  buildReadme(heading) {
+    const dbName = this.projectName.replace(/\s+/g, '_').toLowerCase();
+    return [
+      `# ${heading}`,
+      '',
+      'Express + Node.js REST API with MongoDB (Mongoose), organised as a layered MVC structure.',
+      '',
+      '## Requirements',
+      '- Node.js 20 or newer',
+      '- A running MongoDB instance (local or Atlas). The server exits if it cannot connect.',
+      '',
+      '## Getting started',
+      '```bash',
+      'cp .env.example .env     # then edit the values',
+      'npm install',
+      'npm run dev              # nodemon, auto-restart on changes',
+      '```',
+      'The API starts on `http://localhost:5000` and the health check is at `GET /api/health`.',
+      '',
+      '> DevPilot does not install dependencies automatically. Run `npm install` yourself.',
+      '',
+      '## Scripts',
+      '| Command | What it does |',
+      '| --- | --- |',
+      '| `npm run dev` | Start with nodemon (development) |',
+      '| `npm start` | Start with node (production) |',
+      '',
+      '## Environment variables (`.env`)',
+      '| Variable | Default in `.env.example` | Purpose |',
+      '| --- | --- | --- |',
+      '| `PORT` | `5000` | Port the server listens on |',
+      `| \`MONGODB_URI\` | \`mongodb://localhost:27017/${dbName}\` | MongoDB connection string |`,
+      '| `JWT_SECRET` | `replace_with_secure_secret` | Secret for signing tokens. Change it before real use |',
+      '| `FRONTEND_URL` | `http://localhost:4200` | Frontend origin (for CORS if you restrict it later) |',
+      '',
+      '`.env` is git-ignored. Only `.env.example` is committed.',
+      '',
+      '## Folder structure',
+      '```',
+      'src/',
+      '  config/        database connection and other setup',
+      '  controllers/   read the request, call a service, send the response',
+      '  services/      business logic (no req/res in here)',
+      '  models/        Mongoose schemas',
+      '  routes/        URL -> controller mapping',
+      '  middleware/    error handling, auth, etc.',
+      '  validators/    request validation (zod is installed)',
+      '  utils/         small helpers (asyncHandler.js included)',
+      '  constants/     shared constant values',
+      '  app.js         Express app: middleware + routes',
+      '  server.js      loads .env, connects to MongoDB, starts listening',
+      '```',
+      '',
+      '## Request flow',
+      '`Route -> Middleware -> Controller -> Service -> Model -> Database`',
+      '',
+      '## Adding a new feature (example: users)',
+      '1. `models/user.model.js` - define the schema',
+      '2. `services/user.service.js` - business logic',
+      '3. `controllers/user.controller.js` - handle req/res',
+      '4. `routes/user.routes.js` - define the endpoints',
+      '5. Mount it in `src/app.js`: `app.use(\'/api/users\', userRoutes);`',
+      '',
+      '## Endpoints',
+      '| Method | Path | Description |',
+      '| --- | --- | --- |',
+      '| GET | `/api/health` | Returns `{ success: true, message: \'API is running\' }` |',
+      ''
+    ].join('\n');
   }
 
   async generateExpressFiles(dir) {

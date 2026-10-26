@@ -78,7 +78,7 @@ export class DocumentationComponent {
     const type = this.selectedType.value || 'readme';
 
     this.aiService.generateDocumentation(projectId, type).subscribe({
-      next: (content) => {
+      next: (content: string) => {
         this.isGenerating.set(false);
         this.generatedContent.set(content);
         this.view.set('viewer');

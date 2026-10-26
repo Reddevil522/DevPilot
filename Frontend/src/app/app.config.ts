@@ -33,7 +33,12 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptorFn])),
     provideAnimations(),
     provideMonacoEditor({
-      defaultOptions: { scrollBeyondLastLine: false, automaticLayout: true }
+      defaultOptions: { scrollBeyondLastLine: false, automaticLayout: true },
+      requireConfig: {
+        paths: {
+          vs: 'assets/monaco/vs'
+        }
+      }
     })
   ]
 };

@@ -1,116 +1,168 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { Injectable, signal, inject } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, throwError, of } from 'rxjs';
+import { map, catchError, finalize, delay } from 'rxjs/operators';
 import { AIMessage, AIContext, DocumentationType } from '../../shared/models/ai.model';
-
-const AI_RESPONSES: Record<string, string> = {
-  explain: `This function implements the **JWT authentication middleware**. It:
-
-1. Extracts the Bearer token from the \`Authorization\` header
-2. Verifies the token signature using the \`JWT_SECRET\` environment variable
-3. Attaches the decoded user payload to \`req.user\` for downstream handlers
-4. Throws a \`401 Unauthorized\` error if the token is missing, expired, or invalid
-
-This is a stateless authentication pattern — no session storage is needed on the server.`,
-  fix: `I found 2 issues in your code:
-
-\`\`\`typescript
-// ❌ Before — possible null reference
-const user = users.find(u => u.id === id);
-user.name = 'updated'; // will throw if not found
-
-// ✅ After — safe optional chaining
-const user = users.find(u => u.id === id);
-if (user) {
-  user.name = 'updated';
-}
-\`\`\``,
-  refactor: `Here's a refactored version using modern TypeScript patterns:
-
-\`\`\`typescript
-// Clean, typed, async/await version
-async function getUser(id: string): Promise<User | null> {
-  try {
-    const user = await UserModel.findById(id).select('-password').lean();
-    return user ?? null;
-  } catch {
-    return null;
-  }
-}
-\`\`\``,
-  tests: `Generated test suite:
-
-\`\`\`typescript
-describe('AuthService', () => {
-  it('should return 401 for invalid credentials', async () => {
-    const res = await request(app)
-      .post('/api/auth/login')
-      .send({ email: 'bad@email.com', password: 'wrong' });
-    expect(res.status).toBe(401);
-  });
-
-  it('should return user on valid login', async () => {
-    const res = await request(app)
-      .post('/api/auth/login')
-      .send({ email: 'test@test.com', password: 'Password123!' });
-    expect(res.status).toBe(200);
-    expect(res.body.user).toBeDefined();
-  });
-});
-\`\`\``,
-  default: `I'm analyzing your code and project context...
-
-Based on the current file and project structure, I can help you with:
-- **Explaining** complex logic and patterns
-- **Fixing** bugs and type errors
-- **Refactoring** for better performance and readability
-- **Generating** tests, documentation, and boilerplate
-
-What would you like me to help with?`
-};
 
 @Injectable({ providedIn: 'root' })
 export class AiService {
+  private http = inject(HttpClient);
+  private apiUrl = 'http://localhost:5000/api/ai';
+
   readonly isThinking = signal(false);
   readonly isPanelOpen = signal(false);
+  readonly currentConversationId = signal<string | null>(null);
+
   readonly context = signal<AIContext>({
-    projectName: 'E-Commerce API',
-    projectId: '1',
-    currentFile: 'src/app.ts'
+    projectName: '',
+    projectId: '',
+    currentFile: '',
+    selectedCode: '',
+    errorContext: ''
   });
 
-  sendMessage(message: string, _context: AIContext): Observable<AIMessage> {
+  /**
+   * Sends a real chat message to the DevPilot backend AI endpoint.
+   */
+  sendMessage(message: string, currentContext: AIContext): Observable<AIMessage> {
     this.isThinking.set(true);
-    const lower = message.toLowerCase();
-    let content = AI_RESPONSES['default'];
 
-    if (lower.includes('explain') || lower.includes('what')) content = AI_RESPONSES['explain'];
-    else if (lower.includes('fix') || lower.includes('error') || lower.includes('bug')) content = AI_RESPONSES['fix'];
-    else if (lower.includes('refactor') || lower.includes('improve')) content = AI_RESPONSES['refactor'];
-    else if (lower.includes('test')) content = AI_RESPONSES['tests'];
-
-    const response: AIMessage = {
-      id: String(Date.now()),
-      role: 'assistant',
-      content,
-      timestamp: new Date()
+    const payload = {
+      message,
+      projectId: currentContext.projectId || undefined,
+      conversationId: this.currentConversationId() || undefined,
+      activeFilePath: currentContext.currentFile || undefined,
+      selectedCode: currentContext.selectedCode || undefined,
+      errorContext: currentContext.errorContext || undefined
     };
 
-    return of(response).pipe(
-      delay(1200 + Math.random() * 800)
+    return this.http.post<{ success: boolean; conversationId: string; message: any }>(
+      `${this.apiUrl}/chat`,
+      payload,
+      { withCredentials: true }
+    ).pipe(
+      map(res => {
+        if (res.conversationId) {
+          this.currentConversationId.set(res.conversationId);
+        }
+
+        const msg: AIMessage = {
+          id: res.message.id || String(Date.now()),
+          role: res.message.role || 'assistant',
+          content: res.message.content || '',
+          timestamp: res.message.timestamp ? new Date(res.message.timestamp) : new Date(),
+          proposal: res.message.proposal || null
+        };
+        return msg;
+      }),
+      catchError((error: HttpErrorResponse) => {
+        let errorMsg = 'AI request failed.';
+        let code = 'UNKNOWN_ERROR';
+
+        if (error.status === 0) {
+          errorMsg = 'Cannot reach DevPilot backend server (port 5000).';
+          code = 'BACKEND_UNREACHABLE';
+        } else if (error.error?.message) {
+          errorMsg = error.error.message;
+          code = error.error.code || 'API_ERROR';
+        } else if (error.message) {
+          errorMsg = error.message;
+        }
+
+        return throwError(() => ({
+          message: errorMsg,
+          code,
+          status: error.status
+        }));
+      }),
+      finalize(() => {
+        this.isThinking.set(false);
+      })
     );
   }
 
-  generateDocumentation(projectId: string, type: DocumentationType): Observable<string> {
-    this.isThinking.set(true);
-    const docs: Record<DocumentationType, string> = {
-      readme: `# E-Commerce API\n\nA robust RESTful API built with Node.js, Express, and MongoDB.\n\n## Features\n- JWT Authentication\n- Product Management\n- Order Processing\n- Payment Integration\n\n## Quick Start\n\n\`\`\`bash\nnpm install\nnpm run dev\n\`\`\`\n\n## Environment Variables\n\nCopy \`.env.example\` to \`.env\` and configure your values.`,
-      api: `# API Reference\n\n## Authentication\n\n### POST /api/auth/login\nAuthenticates a user and returns JWT tokens.\n\n**Request Body:**\n\`\`\`json\n{\n  "email": "user@example.com",\n  "password": "Password123!"\n}\n\`\`\`\n\n**Response:**\n\`\`\`json\n{\n  "success": true,\n  "user": { "id": "...", "name": "..." }\n}\n\`\`\``,
-      code: `# Code Documentation\n\nGenerated documentation for 24 functions across 8 files.\n\n## auth.controller.ts\n\n### \`login(req, res)\`\nHandles user authentication. Validates credentials against the database and issues JWT tokens via secure HttpOnly cookies.\n\n**Parameters:** \`req: Request\`, \`res: Response\`\n**Returns:** \`void\``,
-      architecture: `# Architecture Overview\n\n## System Design\n\nThis API follows a **layered architecture** pattern:\n\n\`\`\`\nClient → Routes → Controllers → Services → Models → MongoDB\n\`\`\`\n\n## Components\n- **Routes**: Express router definitions\n- **Controllers**: Request/response handling\n- **Services**: Business logic\n- **Models**: Mongoose schemas`,
-      deployment: `# Deployment Guide\n\n## Prerequisites\n- Node.js 18+\n- MongoDB Atlas account\n- DevPilot account\n\n## Deploy to DevPilot\n\n1. Connect your repository\n2. Set environment variables\n3. Click **Deploy**\n\n## Environment Variables\n\n| Key | Description |\n|-----|-------------|\n| \`MONGODB_URI\` | MongoDB connection string |\n| \`JWT_SECRET\` | JWT signing secret |`
-    };
+  /**
+   * Applies approved AI proposed changes to real files on the local filesystem.
+   */
+  applyChanges(messageId: string, projectId: string): Observable<{ success: boolean; appliedFiles: string[]; message: string }> {
+    const conversationId = this.currentConversationId();
+    return this.http.post<{ success: boolean; appliedFiles: string[]; message: string }>(
+      `${this.apiUrl}/apply-changes`,
+      { conversationId, messageId, projectId },
+      { withCredentials: true }
+    );
+  }
 
-    return of(docs[type] || docs['readme']).pipe(delay(2500));
+  /**
+   * Rejects proposed AI file changes. Real files on disk remain untouched.
+   */
+  rejectChanges(messageId: string): Observable<{ success: boolean; message: string }> {
+    const conversationId = this.currentConversationId();
+    return this.http.post<{ success: boolean; message: string }>(
+      `${this.apiUrl}/reject-changes`,
+      { conversationId, messageId },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Fetches conversation history from backend
+   */
+  getConversation(conversationId: string): Observable<AIMessage[]> {
+    return this.http.get<{ success: boolean; data: any }>(
+      `${this.apiUrl}/conversations/${conversationId}`,
+      { withCredentials: true }
+    ).pipe(
+      map(res => {
+        const msgs: AIMessage[] = (res.data?.messages || []).map((m: any) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          timestamp: new Date(m.timestamp),
+          proposal: m.proposal || null
+        }));
+        return msgs;
+      })
+    );
+  }
+
+  /**
+   * Clears current conversation history on backend and resets conversation ID
+   */
+  clearConversation(): Observable<void> {
+    const convId = this.currentConversationId();
+    this.currentConversationId.set(null);
+    if (!convId) {
+      return new Observable(sub => { sub.next(); sub.complete(); });
+    }
+    return this.http.delete<void>(
+      `${this.apiUrl}/conversations/${convId}`,
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Resets AI context when switching projects to guarantee no context leakage
+   */
+  resetProjectContext(project: { id: string; name?: string } | null): void {
+    this.currentConversationId.set(null);
+    if (project) {
+      this.context.set({
+        projectId: project.id,
+        projectName: project.name || '',
+        currentFile: '',
+        selectedCode: '',
+        errorContext: ''
+      });
+    } else {
+      this.context.set({
+        projectId: '',
+        projectName: '',
+        currentFile: '',
+        selectedCode: '',
+        errorContext: ''
+      });
+    }
   }
 
   updateContext(ctx: Partial<AIContext>): void {
@@ -119,6 +171,22 @@ export class AiService {
 
   togglePanel(): void {
     this.isPanelOpen.update((v) => !v);
+  }
+
+  generateDocumentation(projectId: string, type: DocumentationType): Observable<string> {
+    this.isThinking.set(true);
+    const docs: Record<DocumentationType, string> = {
+      readme: `# Project Documentation\n\nA modern application built on DevPilot.\n\n## Quick Start\n\`\`\`bash\nnpm install\nnpm run dev\n\`\`\``,
+      api: `# API Reference\n\n## Endpoints\n- GET /api/health - Health check\n- POST /api/auth/login - Authentication`,
+      code: `# Code Architecture\n\nModular design separating routes, controllers, services, and models.`,
+      architecture: `# Architecture Overview\n\nClient (Angular) -> REST API (Node.js/Express) -> Database (MongoDB) + Local Filesystem`,
+      deployment: `# Deployment Guide\n\nConfigured for local development and cloud container execution.`
+    };
+
+    return of(docs[type] || docs['readme']).pipe(
+      delay(1000),
+      finalize(() => this.isThinking.set(false))
+    );
   }
 
   stopThinking(): void {

@@ -21,7 +21,55 @@ class MeanTemplate extends BaseTemplate {
     await expressTemplate.createStructure(bePath, false);
 
     await this.generateRootGitignore();
-    await this.generateRootReadme(`# ${this.projectName}\n\nMEAN Stack Architecture.\n\n## Structure\n- \`frontend/\`: Angular application.\n- \`backend/\`: Express + Node.js API.\n- \`.devpilot/\`: Local project identity.\n\n**IMPORTANT**: DevPilot DOES NOT automatically install dependencies. The developer must run npm install manually.\n\n## Frontend\ncd frontend\nnpm install\nnpm start\n\n## Backend\ncd backend\nnpm install\nnpm run dev\n`);
+    await this.generateRootReadme(this.buildReadme());
+  }
+
+  buildReadme() {
+    return [
+      `# ${this.projectName}`,
+      '',
+      'MEAN stack: MongoDB, Express, Angular, Node.js.',
+      '',
+      '## Structure',
+      '```',
+      '.',
+      '  frontend/   Angular app (UI)',
+      '  backend/    Express + Node.js REST API with MongoDB (Mongoose)',
+      '  .devpilot/  local project identity (git-ignored)',
+      '```',
+      'Each folder has its own README with the details. Read those next.',
+      '',
+      '## Requirements',
+      '- Node.js 20 or newer',
+      '- A running MongoDB instance (local or Atlas)',
+      '',
+      '## Getting started',
+      '> DevPilot does not install dependencies automatically. Run `npm install` in each folder yourself.',
+      '',
+      'Terminal 1 - backend (http://localhost:5000):',
+      '```bash',
+      'cd backend',
+      'cp .env.example .env     # then edit the values',
+      'npm install',
+      'npm run dev',
+      '```',
+      '',
+      'Terminal 2 - frontend (http://localhost:4200):',
+      '```bash',
+      'cd frontend',
+      'npm install',
+      'npm start',
+      '```',
+      '',
+      '## How frontend and backend talk',
+      '- The backend serves its API under `/api` (health check: `GET http://localhost:5000/api/health`).',
+      '- The Angular app reads the API address from `frontend/src/environments/` (`apiUrl`, development value `http://localhost:5000/api`).',
+      '- CORS is currently open (`cors()` in `backend/src/app.js`). `FRONTEND_URL` in `backend/.env` is not used yet; if you restrict CORS later, set it to `http://localhost:4200`.',
+      '',
+      '## Git',
+      'A `.gitignore` is included. It keeps `node_modules`, build output, `.env` files and logs out of git. `.env.example` files are committed.',
+      ''
+    ].join('\n');
   }
 }
 

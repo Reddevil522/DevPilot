@@ -1,11 +1,32 @@
 export type AIMessageRole = 'user' | 'assistant' | 'system';
 
+export type AIProposalOperation = 'create' | 'edit';
+export type AIProposalStatus = 'pending' | 'applied' | 'rejected';
+
+export interface AIProposedChange {
+  path: string;
+  operation: AIProposalOperation;
+  content: string;
+  originalContent?: string;
+  originalHash?: string;
+  explanation?: string;
+}
+
+export interface AIProposal {
+  summary: string;
+  status: AIProposalStatus;
+  changes: AIProposedChange[];
+}
+
 export interface AIMessage {
   id: string;
   role: AIMessageRole;
   content: string;
   timestamp: Date;
+  proposal?: AIProposal | null;
   isStreaming?: boolean;
+  isError?: boolean;
+  errorCode?: string;
 }
 
 export interface AIContext {
@@ -13,6 +34,7 @@ export interface AIContext {
   selectedCode?: string;
   projectName?: string;
   projectId?: string;
+  errorContext?: string;
 }
 
 export type DocumentationType =

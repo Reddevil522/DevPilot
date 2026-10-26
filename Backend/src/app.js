@@ -31,10 +31,14 @@ app.get('/api/health', (req, res) => {
 const authRoutes = require('./routes/auth.routes');
 const projectRoutes = require('./routes/project.routes');
 const fileRoutes = require('./routes/file.routes');
+const aiRoutes = require('./routes/ai.routes');
+const terminalRoutes = require('./routes/terminal.routes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/projects', fileRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/terminal', terminalRoutes);
 
 // Error Handling Middleware
 app.use(errorMiddleware);

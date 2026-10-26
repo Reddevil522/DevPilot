@@ -6,7 +6,10 @@ const User = require('../models/user.model');
  */
 const requireAuth = async (req, res, next) => {
   try {
-    const accessToken = req.cookies.accessToken;
+    const accessToken = req.cookies?.accessToken || 
+      (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') 
+        ? req.headers.authorization.split(' ')[1] 
+        : null);
 
     if (!accessToken) {
       return res.status(401).json({ success: false, message: 'Authentication required. No token provided.' });
@@ -42,7 +45,10 @@ const requireAuth = async (req, res, next) => {
  */
 const requireAuthLight = (req, res, next) => {
   try {
-    const accessToken = req.cookies?.accessToken;
+    const accessToken = req.cookies?.accessToken || 
+      (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') 
+        ? req.headers.authorization.split(' ')[1] 
+        : null);
 
     if (accessToken) {
       try {

@@ -5,8 +5,8 @@ const path = require('path');
 class WatcherService extends EventEmitter {
   constructor() {
     super();
-    this.watcher = null;
-    this.currentProjectRoot = null;
+    // Map of normalizedProjectRoot -> { watcher, projectRoot, refCount }
+    this.watchers = new Map();
     
     // Ignore rules standard for DevPilot
     this.ignored = [
@@ -17,14 +17,24 @@ class WatcherService extends EventEmitter {
     ];
   }
 
-  watch(projectRoot) {
-    if (this.currentProjectRoot === projectRoot) return;
+  normalizeRoot(rootPath) {
+    if (!rootPath) return '';
+    return path.resolve(rootPath).toLowerCase();
+  }
 
-    this.stop();
-    this.currentProjectRoot = projectRoot;
+  watch(projectRoot) {
+    if (!projectRoot) return;
+    const normRoot = this.normalizeRoot(projectRoot);
+    const existing = this.watchers.get(normRoot);
+
+    if (existing) {
+      existing.refCount++;
+      return;
+    }
+
     console.log(`[Watcher] Starting watcher for: ${projectRoot}`);
 
-    this.watcher = chokidar.watch(projectRoot, {
+    const watcher = chokidar.watch(projectRoot, {
       ignored: this.ignored,
       persistent: true,
       ignoreInitial: true,
@@ -34,40 +44,59 @@ class WatcherService extends EventEmitter {
       }
     });
 
-    this.watcher
-      .on('add', filePath => this.emitEvent('CREATE', filePath))
-      .on('change', filePath => this.emitEvent('UPDATE', filePath))
-      .on('unlink', filePath => this.emitEvent('DELETE', filePath))
-      .on('addDir', dirPath => this.emitEvent('CREATE_FOLDER', dirPath))
-      .on('unlinkDir', dirPath => this.emitEvent('DELETE_FOLDER', dirPath))
-      .on('error', error => console.error(`[Watcher] Error: ${error}`));
+    watcher
+      .on('add', filePath => this.emitEvent('CREATE', projectRoot, filePath))
+      .on('change', filePath => this.emitEvent('UPDATE', projectRoot, filePath))
+      .on('unlink', filePath => this.emitEvent('DELETE', projectRoot, filePath))
+      .on('addDir', dirPath => this.emitEvent('CREATE_FOLDER', projectRoot, dirPath))
+      .on('unlinkDir', dirPath => this.emitEvent('DELETE_FOLDER', projectRoot, dirPath))
+      .on('error', error => console.error(`[Watcher] Error (${projectRoot}): ${error}`));
+
+    this.watchers.set(normRoot, { watcher, projectRoot, refCount: 1 });
   }
 
-  emitEvent(type, fullPath) {
-    if (!this.currentProjectRoot) return;
-    const relativePath = path.relative(this.currentProjectRoot, fullPath);
+  emitEvent(type, projectRoot, fullPath) {
+    const relativePath = path.relative(projectRoot, fullPath);
     // Standardize to forward slashes for the frontend
     const standardizedPath = relativePath.split(path.sep).join('/');
     
     this.emit('file-event', {
       type,
       path: standardizedPath,
+      projectRoot: this.normalizeRoot(projectRoot),
       timestamp: Date.now()
     });
   }
 
-  async stop() {
-    if (this.watcher) {
-      console.log(`[Watcher] Stopping watcher for: ${this.currentProjectRoot}`);
-      const w = this.watcher;
-      this.watcher = null;
-      this.currentProjectRoot = null;
+  async unwatch(projectRoot) {
+    if (!projectRoot) return;
+    const normRoot = this.normalizeRoot(projectRoot);
+    const entry = this.watchers.get(normRoot);
+    if (!entry) return;
+
+    entry.refCount--;
+    if (entry.refCount <= 0) {
+      console.log(`[Watcher] Stopping watcher for: ${projectRoot}`);
+      this.watchers.delete(normRoot);
       try {
-        await w.close();
+        await entry.watcher.close();
       } catch (err) {
-        console.warn('[Watcher] Error closing watcher:', err);
+        console.warn(`[Watcher] Error closing watcher for ${projectRoot}:`, err);
       }
     }
+  }
+
+  async stop() {
+    await this.stopAll();
+  }
+
+  async stopAll() {
+    for (const [normRoot, entry] of this.watchers.entries()) {
+      try {
+        await entry.watcher.close();
+      } catch (_) {}
+    }
+    this.watchers.clear();
   }
 }
 

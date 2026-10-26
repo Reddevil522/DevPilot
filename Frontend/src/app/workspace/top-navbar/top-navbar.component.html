@@ -60,8 +60,8 @@
               </button>
             </div>
             <div class="devpilot-navbar__project-new">
-              <button class="devpilot-navbar__project-create">
-                <span>+</span> Create New Project
+              <button class="devpilot-navbar__project-create" (click)="openLocalFolder()" id="navbar-open-folder-btn">
+                <lucide-icon name="folder-open" size="14"></lucide-icon> Open Local Folder...
               </button>
             </div>
           </div>
@@ -198,3 +198,10 @@
     </div>
   </div>
 </nav>
+
+<!-- Open Local Folder Modal -->
+<app-open-folder-modal
+  [isVisible]="openFolderModalOpen()"
+  (closed)="openFolderModalOpen.set(false)"
+  (folderOpened)="onFolderOpened($event)"
+></app-open-folder-modal>

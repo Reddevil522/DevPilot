@@ -12,6 +12,7 @@
   border-top: 1px solid var(--dp-surface-border);
   background: #0a0d18;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .devpilot-panel__header {
@@ -21,6 +22,7 @@
   background: #080b14;
   border-bottom: 1px solid rgba(255,255,255,0.06);
   flex-shrink: 0;
+  min-height: 30px;
 }
 
 .devpilot-panel__tabs {
@@ -49,61 +51,224 @@
   display: flex;
   align-items: center;
   padding: 0 12px;
+  gap: 10px;
+}
+
+/* Terminal session controls */
+.devpilot-panel__session-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.devpilot-panel__session-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: var(--dp-font-mono);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all var(--dp-transition-fast);
+}
+
+.devpilot-panel__session-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.devpilot-panel__session-tab--active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #f2f3f9;
+}
+
+.devpilot-panel__session-title {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.devpilot-panel__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6b7280;
+  flex-shrink: 0;
+}
+
+.devpilot-panel__status-dot--connected {
+  background: #34d399;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+}
+
+.devpilot-panel__status-dot--connecting {
+  background: #fbbf24;
+  animation: dp-pulse 1s infinite alternate;
+}
+
+.devpilot-panel__status-dot--error {
+  background: #f87171;
+}
+
+.devpilot-panel__status-dot--exited {
+  background: #9ca3af;
+}
+
+@keyframes dp-pulse {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+.devpilot-panel__session-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  padding: 1px;
+  color: rgba(255, 255, 255, 0.4);
+  transition: all var(--dp-transition-fast);
+}
+
+.devpilot-panel__session-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f87171;
+}
+
+.devpilot-panel__icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--dp-transition-fast);
+}
+
+.devpilot-panel__icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .devpilot-panel__cwd {
   font-size: 10px;
   font-family: var(--dp-font-mono);
   color: rgba(255,255,255,0.3);
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* Terminal */
-.devpilot-panel__terminal {
+/* Terminal wrapper & mount host */
+.devpilot-panel__terminal-wrapper {
   flex: 1;
-  padding: 10px 16px;
-  font-family: var(--dp-font-mono);
-  font-size: 12.5px;
-  line-height: 1.7;
-  overflow-y: auto;
-}
-
-.devpilot-panel__terminal-line {
   display: flex;
-  gap: 8px;
-  align-items: flex-start;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  height: calc(100% - 30px);
+  position: relative;
+  background: #0a0d18;
 }
 
-.devpilot-panel__terminal-line--command { color: rgba(255,255,255,0.9); }
-.devpilot-panel__terminal-line--output { color: rgba(255,255,255,0.5); }
-.devpilot-panel__terminal-line--success { color: #4ade80; }
-.devpilot-panel__terminal-line--error { color: #f87171; }
-.devpilot-panel__terminal-line--blank { min-height: 8px; }
+.devpilot-panel__xterm-host {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 6px 10px 4px 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
 
-.devpilot-panel__prompt {
-  color: var(--dp-accent);
-  font-weight: 700;
+.devpilot-terminal-instance {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* xterm overrides for crisp VS Code look */
+:host ::ng-deep .xterm {
+  height: 100%;
+  padding: 0;
+}
+
+:host ::ng-deep .xterm .xterm-viewport {
+  overflow-y: auto !important;
+  background: transparent !important;
+}
+
+:host ::ng-deep .xterm .xterm-screen {
+  font-feature-settings: "liga" 0;
+}
+
+/* Banners (Connecting, Error, Exited) */
+.devpilot-panel__banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-family: var(--dp-font-mono);
   flex-shrink: 0;
 }
 
-.devpilot-panel__cursor-line {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  color: rgba(255,255,255,0.9);
+.devpilot-panel__banner--connecting {
+  background: rgba(251, 191, 36, 0.1);
+  border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
 }
 
-.devpilot-panel__cursor {
-  display: inline-block;
-  width: 8px;
-  height: 14px;
+.devpilot-panel__banner--error {
+  background: rgba(248, 113, 113, 0.12);
+  border-bottom: 1px solid rgba(248, 113, 113, 0.25);
+  color: #f87171;
+}
+
+.devpilot-panel__banner--info {
+  background: rgba(99, 102, 241, 0.1);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.devpilot-panel__banner-text {
+  flex: 1;
+}
+
+.devpilot-panel__btn-action {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  color: #ffffff;
+  font-size: 10.5px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all var(--dp-transition-fast);
+}
+
+.devpilot-panel__btn-action:hover {
   background: var(--dp-accent);
-  animation: dp-blink 1.1s step-end infinite;
-  border-radius: 1px;
+  border-color: var(--dp-accent);
 }
 
-@keyframes dp-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+/* Spinner helper */
+.dp-spin {
+  animation: dp-spin 1s linear infinite;
+}
+
+@keyframes dp-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Content panels */

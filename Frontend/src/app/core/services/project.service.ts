@@ -1,9 +1,11 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, from, of, switchMap, catchError, map, tap, firstValueFrom } from 'rxjs';
+import { Observable, from, of, switchMap, catchError, map, tap, finalize, firstValueFrom } from 'rxjs';
 import {
   Project,
   CreateProjectPayload,
+  OpenFolderPayload,
+  ValidatePathResult,
   FileNode,
 } from '../../shared/models/project.model';
 
@@ -21,19 +23,14 @@ export class ProjectService {
   getProjects(): Observable<Project[]> {
     this.isLoading.set(true);
     return this.http.get<{success: boolean, data: Project[]}>(this.apiUrl, { withCredentials: true }).pipe(
-      map(response => response.data),
-      tap(() => this.isLoading.set(false)),
-      catchError(() => {
-        this.isLoading.set(false);
-        return of([]);
-      })
+      map(response => response.data || []),
+      finalize(() => this.isLoading.set(false))
     );
   }
 
-  getProject(id: string): Observable<Project | undefined> {
+  getProject(id: string): Observable<Project> {
     return this.http.get<{success: boolean, data: Project}>(`${this.apiUrl}/${id}`, { withCredentials: true }).pipe(
-      map(response => response.data),
-      catchError(() => of(undefined))
+      map(response => response.data)
     );
   }
 
@@ -170,19 +167,74 @@ export class ProjectService {
     });
   }
 
+  /**
+   * Register an existing local filesystem folder as a DevPilot workspace project.
+   */
+  openExistingFolder(payload: OpenFolderPayload): Observable<Project> {
+    this.isCreating.set(true);
+    return this.http.post<{ success: boolean; data: Project; message?: string }>(
+      `${this.apiUrl}/open-folder`,
+      payload,
+      { withCredentials: true }
+    ).pipe(
+      map(response => response.data),
+      tap(project => {
+        this.isCreating.set(false);
+        this.activeProject.set(project);
+      }),
+      catchError(error => {
+        this.isCreating.set(false);
+        throw error;
+      })
+    );
+  }
+
+  /**
+   * Pre-flight validation of local folder existence and accessibility.
+   */
+  validateWorkspacePath(localPath: string): Observable<ValidatePathResult> {
+    return this.http.post<ValidatePathResult>(
+      `${this.apiUrl}/validate-path`,
+      { localPath },
+      { withCredentials: true }
+    ).pipe(
+      catchError(err => of({
+        success: false,
+        exists: false,
+        isDirectory: false,
+        accessible: false,
+        message: err.error?.message || err.message || 'Validation failed'
+      }))
+    );
+  }
+
+  /**
+   * Explicitly update the project last-opened timestamp.
+   */
+  updateLastOpened(id: string): Observable<{ success: boolean; lastOpenedAt: string }> {
+    return this.http.patch<{ success: boolean; data: { id: string; lastOpenedAt: string } }>(
+      `${this.apiUrl}/${id}/last-opened`,
+      {},
+      { withCredentials: true }
+    ).pipe(
+      map(res => ({ success: res.success, lastOpenedAt: res.data?.lastOpenedAt }))
+    );
+  }
+
   updateProject(id: string, updates: Partial<Project>): Observable<Project> {
     return this.http.patch<{success: boolean, data: Project}>(`${this.apiUrl}/${id}`, updates, { withCredentials: true }).pipe(
       map(response => response.data)
     );
   }
 
-  deleteProject(id: string): Observable<{ success: boolean }> {
-    return this.http.delete<{success: boolean}>(`${this.apiUrl}/${id}`, { withCredentials: true }).pipe(
+  deleteProject(id: string, deleteFiles: boolean = false): Observable<{ success: boolean; message?: string }> {
+    const url = deleteFiles ? `${this.apiUrl}/${id}?deleteFiles=true` : `${this.apiUrl}/${id}`;
+    return this.http.delete<{success: boolean; message?: string}>(url, { withCredentials: true }).pipe(
       map(response => response)
     );
   }
 
-  setActiveProject(project: Project): void {
+  setActiveProject(project: Project | null): void {
     this.activeProject.set(project);
   }
 

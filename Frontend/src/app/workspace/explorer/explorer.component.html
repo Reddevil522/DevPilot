@@ -1,22 +1,25 @@
-<div class="devpilot-explorer" (click)="closeContextMenu()">
+<div class="devpilot-explorer" tabindex="0">
   <!-- Header -->
   <div class="devpilot-explorer__header">
     <span class="devpilot-explorer__title">EXPLORER</span>
     <div class="devpilot-explorer__header-actions">
-      <button class="devpilot-explorer__action-btn" title="New File" (click)="createNewFile()">
+      <button class="devpilot-explorer__action-btn" title="Open Local Folder" (click)="openLocalFolder()" id="explorer-open-folder-btn">
+        <lucide-icon name="folder-open" [size]="14"></lucide-icon>
+      </button>
+      <button class="devpilot-explorer__action-btn" title="New File" (click)="openNewFileDialog(null)">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M9 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V6L9 2z"/>
           <path d="M9 2v4h4"/>
           <path d="M8 10V8M7 9h2" stroke-linecap="round"/>
         </svg>
       </button>
-      <button class="devpilot-explorer__action-btn" title="New Folder" (click)="createNewFolder()">
+      <button class="devpilot-explorer__action-btn" title="New Folder" (click)="openNewFolderDialog(null)">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M1 3a1 1 0 011-1h4l2 2h6a1 1 0 011 1v7a1 1 0 01-1 1H2a1 1 0 01-1-1V3z"/>
           <path d="M8 8v2M7 9h2" stroke-linecap="round"/>
         </svg>
       </button>
-      <button class="devpilot-explorer__action-btn" title="Refresh" (click)="ngOnInit()">
+      <button class="devpilot-explorer__action-btn" title="Refresh Explorer" (click)="refreshAll()">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M2 8a6 6 0 016-6 6.1 6.1 0 014.5 2H11" stroke-linecap="round"/>
           <path d="M14 8a6 6 0 01-6 6 6.1 6.1 0 01-4.5-2H5" stroke-linecap="round"/>
@@ -29,14 +32,22 @@
 
   <!-- Project Name -->
   @if (localRootName()) {
-    <div class="devpilot-explorer__project-name">
+    <div
+      class="devpilot-explorer__project-name"
+      (contextmenu)="onContextMenu($event, null)"
+      (click)="selectedFile.set(null)"
+    >
       <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
         <path d="M2 3l4 3-4 3V3z" />
       </svg>
       {{ localRootName().toUpperCase() }} (LOCAL)
     </div>
   } @else if (activeProject()) {
-    <div class="devpilot-explorer__project-name">
+    <div
+      class="devpilot-explorer__project-name"
+      (contextmenu)="onContextMenu($event, null)"
+      (click)="selectedFile.set(null)"
+    >
       <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
         <path d="M2 3l4 3-4 3V3z" />
       </svg>
@@ -44,7 +55,7 @@
     </div>
   }
 
-  <!-- Loading -->
+  <!-- Loading Skeletons -->
   @if (isLoading()) {
     <div class="devpilot-explorer__loading">
       <div class="dp-skeleton" style="height:14px; width:80%; margin:8px 12px"></div>
@@ -54,25 +65,286 @@
     </div>
   }
 
-  <!-- File Tree -->
+  <!-- File Tree Area -->
   @if (!isLoading()) {
-    <div class="devpilot-explorer__tree dp-scroll">
+    <div
+      class="devpilot-explorer__tree dp-scroll"
+      (contextmenu)="onContextMenu($event, null)"
+    >
       <ng-container *ngTemplateOutlet="fileTree; context: { $implicit: files(), depth: 0 }"></ng-container>
     </div>
   }
 
-  <!-- Context Menu -->
-  @if (contextMenuFile()) {
+  <!-- VS Code-Style Context Menu -->
+  @if (contextMenuVisible()) {
     <div
-      class="devpilot-explorer__context-menu dp-glass-panel"
+      class="devpilot-explorer__context-menu dp-glass-panel dp-fade-in"
       [style.left.px]="contextMenuPos().x"
       [style.top.px]="contextMenuPos().y"
+      (click)="$event.stopPropagation()"
     >
-      <button class="devpilot-explorer__ctx-item">Open</button>
-      <button class="devpilot-explorer__ctx-item">Rename</button>
-      <button class="devpilot-explorer__ctx-item">Copy Path</button>
-      <div class="devpilot-explorer__ctx-divider"></div>
-      <button class="devpilot-explorer__ctx-item devpilot-explorer__ctx-item--danger" (click)="deleteContextNode()">Delete</button>
+      @if (contextMenuFile(); as node) {
+        @if (node.type === 'folder') {
+          <button class="devpilot-explorer__ctx-item" (click)="openNewFileDialog(node)">
+            <lucide-icon name="file-plus" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">New File</span>
+          </button>
+          <button class="devpilot-explorer__ctx-item" (click)="openNewFolderDialog(node)">
+            <lucide-icon name="folder-plus" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">New Folder</span>
+          </button>
+          <div class="devpilot-explorer__ctx-divider"></div>
+          <button class="devpilot-explorer__ctx-item" (click)="startInlineRename(node)">
+            <lucide-icon name="pencil" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">Rename</span>
+            <span class="devpilot-explorer__ctx-shortcut">F2</span>
+          </button>
+          <button class="devpilot-explorer__ctx-item devpilot-explorer__ctx-item--danger" (click)="openDeleteDialog(node)">
+            <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">Delete</span>
+            <span class="devpilot-explorer__ctx-shortcut">Del</span>
+          </button>
+          <div class="devpilot-explorer__ctx-divider"></div>
+          <button class="devpilot-explorer__ctx-item" (click)="copyPath(node)">
+            <lucide-icon name="copy" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">Copy Path</span>
+          </button>
+          <button class="devpilot-explorer__ctx-item" (click)="copyRelativePath(node)">
+            <lucide-icon name="file-text" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">Copy Relative Path</span>
+          </button>
+          <div class="devpilot-explorer__ctx-divider"></div>
+          <button class="devpilot-explorer__ctx-item" (click)="openInTerminal(node)">
+            <lucide-icon name="terminal" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">Open in Integrated Terminal</span>
+          </button>
+        } @else {
+          <button class="devpilot-explorer__ctx-item" (click)="openFileFromContext(node)">
+            <lucide-icon name="file" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">Open</span>
+          </button>
+          <div class="devpilot-explorer__ctx-divider"></div>
+          <button class="devpilot-explorer__ctx-item" (click)="startInlineRename(node)">
+            <lucide-icon name="pencil" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">Rename</span>
+            <span class="devpilot-explorer__ctx-shortcut">F2</span>
+          </button>
+          <button class="devpilot-explorer__ctx-item devpilot-explorer__ctx-item--danger" (click)="openDeleteDialog(node)">
+            <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">Delete</span>
+            <span class="devpilot-explorer__ctx-shortcut">Del</span>
+          </button>
+          <div class="devpilot-explorer__ctx-divider"></div>
+          <button class="devpilot-explorer__ctx-item" (click)="copyPath(node)">
+            <lucide-icon name="copy" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">Copy Path</span>
+          </button>
+          <button class="devpilot-explorer__ctx-item" (click)="copyRelativePath(node)">
+            <lucide-icon name="file-text" [size]="14"></lucide-icon>
+            <span class="devpilot-explorer__ctx-text">Copy Relative Path</span>
+          </button>
+        }
+      } @else {
+        <!-- Root / Blank Area Context Menu -->
+        <button class="devpilot-explorer__ctx-item" (click)="openNewFileDialog(null)">
+          <lucide-icon name="file-plus" [size]="14"></lucide-icon>
+          <span class="devpilot-explorer__ctx-text">New File</span>
+        </button>
+        <button class="devpilot-explorer__ctx-item" (click)="openNewFolderDialog(null)">
+          <lucide-icon name="folder-plus" [size]="14"></lucide-icon>
+          <span class="devpilot-explorer__ctx-text">New Folder</span>
+        </button>
+        <div class="devpilot-explorer__ctx-divider"></div>
+        <button class="devpilot-explorer__ctx-item" (click)="openInTerminal(null)">
+          <lucide-icon name="terminal" [size]="14"></lucide-icon>
+          <span class="devpilot-explorer__ctx-text">Open in Integrated Terminal</span>
+        </button>
+        <button class="devpilot-explorer__ctx-item" (click)="refreshAll()">
+          <lucide-icon name="refresh-cw" [size]="14"></lucide-icon>
+          <span class="devpilot-explorer__ctx-text">Refresh Explorer</span>
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Custom Modal Dialog (Zero Browser Dialogs) -->
+  @if (modalMode()) {
+    <div class="dp-modal-overlay" (click)="closeModal()">
+      <div
+        class="dp-modal-dialog dp-glass-panel dp-fade-in"
+        (click)="$event.stopPropagation()"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
+        <!-- Modal Header -->
+        <div class="dp-modal-dialog__header">
+          <div class="dp-modal-dialog__title-row">
+            <span
+              class="dp-modal-dialog__icon"
+              [class.dp-modal-dialog__icon--danger]="modalMode() === 'delete'"
+            >
+              @if (modalMode() === 'delete') {
+                <lucide-icon name="trash-2" [size]="18"></lucide-icon>
+              } @else if (modalMode() === 'new-file') {
+                <lucide-icon name="file-plus" [size]="18"></lucide-icon>
+              } @else if (modalMode() === 'new-folder') {
+                <lucide-icon name="folder-plus" [size]="18"></lucide-icon>
+              } @else if (modalMode() === 'rename') {
+                <lucide-icon name="pencil" [size]="18"></lucide-icon>
+              }
+            </span>
+            <h3 id="modal-title" class="dp-modal-dialog__title">
+              @if (modalMode() === 'new-file') { New File }
+              @else if (modalMode() === 'new-folder') { New Folder }
+              @else if (modalMode() === 'rename') { Rename {{ modalTargetNode()?.type === 'folder' ? 'Folder' : 'File' }} }
+              @else if (modalMode() === 'delete') {
+                Delete {{ modalTargetNode()?.type === 'folder' ? 'Folder' : 'File' }}?
+              }
+            </h3>
+          </div>
+          <button
+            type="button"
+            class="dp-modal-dialog__close-btn"
+            (click)="closeModal()"
+            [disabled]="modalIsSubmitting()"
+            aria-label="Close dialog"
+            title="Close (Esc)"
+          >
+            <lucide-icon name="x" [size]="16"></lucide-icon>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="dp-modal-dialog__body">
+          <!-- Target Location for New Items -->
+          @if (modalMode() === 'new-file' || modalMode() === 'new-folder') {
+            <div class="dp-modal-dialog__location">
+              <span class="dp-modal-dialog__location-label">Target directory:</span>
+              <span class="dp-modal-dialog__location-path" [title]="modalTargetFolder() || 'Project Root'">
+                <lucide-icon name="folder" [size]="12"></lucide-icon>
+                <span>{{ modalTargetFolder() || 'Project Root' }}</span>
+              </span>
+            </div>
+          }
+
+          <!-- Input Field for New File / Folder / Rename -->
+          @if (modalMode() === 'new-file' || modalMode() === 'new-folder' || modalMode() === 'rename') {
+            <div class="dp-modal-dialog__input-group">
+              <label class="dp-modal-dialog__input-label" for="explorer-modal-input">
+                {{ modalMode() === 'new-file' ? 'File name' : (modalMode() === 'new-folder' ? 'Folder name' : 'New name') }}
+              </label>
+              <input
+                #modalInput
+                id="explorer-modal-input"
+                class="dp-modal-dialog__input"
+                [class.dp-modal-dialog__input--error]="modalInputError()"
+                type="text"
+                [value]="modalInputValue()"
+                (input)="onModalInputChange($event)"
+                (keydown.enter)="submitModal()"
+                [placeholder]="modalMode() === 'new-file' ? 'e.g. auth.service.ts' : 'e.g. services'"
+                [disabled]="modalIsSubmitting()"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              @if (modalInputError()) {
+                <div class="dp-modal-dialog__error-text">
+                  <lucide-icon name="circle-x" [size]="13"></lucide-icon>
+                  <span>{{ modalInputError() }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Delete Confirmation Content -->
+          @if (modalMode() === 'delete') {
+            <div class="dp-modal-dialog__delete-content">
+              <p class="dp-modal-dialog__delete-msg">
+                Are you sure you want to permanently delete
+                {{ modalTargetNode()?.type === 'folder' ? 'this folder' : 'this file' }}?
+              </p>
+
+              <div class="dp-modal-dialog__target-card">
+                <span class="dp-modal-dialog__target-icon">
+                  <lucide-icon
+                    [name]="modalTargetNode()?.type === 'folder' ? 'folder' : 'file-text'"
+                    [size]="16"
+                  ></lucide-icon>
+                </span>
+                <div class="dp-modal-dialog__target-info">
+                  <span class="dp-modal-dialog__target-name" [title]="modalTargetNode()?.name || ''">
+                    {{ modalTargetNode()?.name }}{{ modalTargetNode()?.type === 'folder' ? '/' : '' }}
+                  </span>
+                  @if (modalTargetNode()?.path) {
+                    <span class="dp-modal-dialog__target-path" [title]="modalTargetNode()?.path || ''">
+                      {{ modalTargetNode()?.path }}
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <p class="dp-modal-dialog__delete-subtext">
+                This action cannot be undone. All data will be permanently removed from the local project.
+              </p>
+
+              @if (modalTargetNode()?.type === 'folder') {
+                <div class="dp-modal-dialog__warning-box">
+                  <lucide-icon name="triangle-alert" [size]="15"></lucide-icon>
+                  <span>This action will delete this folder and all of its contents from the local project.</span>
+                </div>
+              }
+              @if (hasUnsavedChangesInTarget()) {
+                <div class="dp-modal-dialog__warning-box dp-modal-dialog__warning-box--dirty">
+                  <lucide-icon name="circle-x" [size]="15"></lucide-icon>
+                  <span>This item has unsaved changes in the editor that will be permanently lost.</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Server / Operation Error Alert -->
+          @if (modalErrorMessage()) {
+            <div class="dp-modal-dialog__error-alert" role="alert">
+              <lucide-icon name="circle-x" [size]="15" class="dp-modal-dialog__error-alert-icon"></lucide-icon>
+              <span class="dp-modal-dialog__error-alert-msg">{{ modalErrorMessage() }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="dp-modal-dialog__footer">
+          <button
+            type="button"
+            class="dp-modal-dialog__btn dp-modal-dialog__btn--secondary"
+            (click)="closeModal()"
+            [disabled]="modalIsSubmitting()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="dp-modal-dialog__btn"
+            [class.dp-modal-dialog__btn--primary]="modalMode() !== 'delete'"
+            [class.dp-modal-dialog__btn--danger]="modalMode() === 'delete'"
+            (click)="submitModal()"
+            [disabled]="modalIsSubmitting() || (modalMode() !== 'delete' && !!modalInputError()) || (modalMode() !== 'delete' && !modalInputValue().trim())"
+          >
+            @if (modalIsSubmitting()) {
+              <span class="dp-modal-dialog__spinner" aria-hidden="true"></span>
+              <span>{{ modalMode() === 'delete' ? 'Deleting...' : 'Processing...' }}</span>
+            } @else if (modalMode() === 'delete') {
+              {{ modalTargetNode()?.type === 'folder' ? 'Delete Folder' : 'Delete' }}
+            } @else if (modalMode() === 'rename') {
+              Rename
+            } @else if (modalMode() === 'new-folder') {
+              Create Folder
+            } @else {
+              Create File
+            }
+          </button>
+        </div>
+      </div>
     </div>
   }
 </div>
@@ -85,16 +357,42 @@
       [style.padding-left.px]="12 + depth * 12"
       [class.devpilot-explorer__node--selected]="selectedFile() === node.path"
       [class.devpilot-explorer__node--folder]="node.type === 'folder'"
+      [class.devpilot-explorer__node--renaming]="renamingNode() === node"
       (click)="selectFile(node)"
       (contextmenu)="onContextMenu($event, node)"
     >
       <span class="devpilot-explorer__node-chevron" *ngIf="node.type === 'folder'">
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" [class.devpilot-explorer__chevron--open]="node.isOpen">
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="currentColor"
+          [class.devpilot-explorer__chevron--open]="node.isOpen"
+        >
           <path d="M3 2l4 3-4 3V2z"/>
         </svg>
       </span>
-      <span class="devpilot-explorer__node-icon"><lucide-icon [name]="getFileIcon(node)" [size]="14"></lucide-icon></span>
-      <span class="devpilot-explorer__node-name">{{ node.name }}</span>
+
+      <span class="devpilot-explorer__node-icon">
+        <lucide-icon [name]="getFileIcon(node)" [size]="14"></lucide-icon>
+      </span>
+
+      @if (renamingNode() === node) {
+        <input
+          #inlineRenameInput
+          type="text"
+          class="devpilot-explorer__inline-input"
+          [value]="inlineRenameValue()"
+          (input)="inlineRenameValue.set($any($event.target).value)"
+          (click)="$event.stopPropagation()"
+          (keydown.enter)="commitInlineRename(node, $event)"
+          (keydown.escape)="cancelInlineRename($event)"
+          (blur)="onInlineRenameBlur(node)"
+          spellcheck="false"
+        />
+      } @else {
+        <span class="devpilot-explorer__node-name">{{ node.name }}</span>
+      }
     </div>
 
     @if (node.type === 'folder' && node.isOpen && node.children) {
@@ -102,3 +400,10 @@
     }
   }
 </ng-template>
+
+<!-- Open Local Folder Modal -->
+<app-open-folder-modal
+  [isVisible]="openFolderModalOpen()"
+  (closed)="openFolderModalOpen.set(false)"
+  (folderOpened)="onFolderOpened($event)"
+></app-open-folder-modal>

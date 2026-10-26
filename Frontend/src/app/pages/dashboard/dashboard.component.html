@@ -8,10 +8,16 @@
       <h1 class="devpilot-dashboard__greeting">{{ greeting }}, {{ user()?.name || 'Developer' }} ✨</h1>
       <p class="devpilot-dashboard__subtitle">Let's continue building something great.</p>
     </div>
-    <button class="devpilot-dashboard__create-btn" (click)="createModalOpen.set(true)" id="create-project-btn">
-      <lucide-icon name="plus"></lucide-icon>
-      Create Project
-    </button>
+    <div class="devpilot-dashboard__header-actions">
+      <button class="devpilot-dashboard__open-folder-btn" (click)="openLocalFolder()" id="open-local-folder-btn">
+        <lucide-icon name="folder-open"></lucide-icon>
+        Open Local Folder
+      </button>
+      <button class="devpilot-dashboard__create-btn" (click)="createModalOpen.set(true)" id="create-project-btn">
+        <lucide-icon name="plus"></lucide-icon>
+        Create Project
+      </button>
+    </div>
   </div>
 
   <!-- Stats -->
@@ -45,6 +51,22 @@
       <button class="devpilot-dashboard__section-link">View all →</button>
     </div>
 
+    <!-- Error Banner -->
+    @if (errorMessage() && !isLoading()) {
+      <div class="devpilot-dashboard__error-banner dp-glass dp-fade-in">
+        <div class="devpilot-dashboard__error-icon">
+          <lucide-icon name="triangle-alert" size="20"></lucide-icon>
+        </div>
+        <div class="devpilot-dashboard__error-info">
+          <div class="devpilot-dashboard__error-title">Unable to load projects</div>
+          <div class="devpilot-dashboard__error-desc">{{ errorMessage() }}</div>
+        </div>
+        <button class="devpilot-dashboard__retry-btn" (click)="loadProjects(true)">
+          <lucide-icon name="refresh-cw" size="14"></lucide-icon> Retry
+        </button>
+      </div>
+    }
+
     <!-- Loading Skeleton -->
     @if (isLoading()) {
       <div class="devpilot-dashboard__projects-grid">
@@ -61,38 +83,75 @@
     <!-- Projects Grid -->
     @if (!isLoading()) {
       <div class="devpilot-dashboard__projects-grid">
+        <!-- Empty State Card if no projects exist -->
+        @if (projects().length === 0 && !errorMessage()) {
+          <div class="devpilot-dashboard__empty-card dp-glass dp-fade-in">
+            <div class="devpilot-dashboard__empty-icon">
+              <lucide-icon name="folder-open" size="28"></lucide-icon>
+            </div>
+            <div class="devpilot-dashboard__empty-title">No projects yet</div>
+            <p class="devpilot-dashboard__empty-desc">Create a new project or open an existing local folder to start building.</p>
+            <div class="devpilot-dashboard__empty-actions">
+              <button class="devpilot-dashboard__open-folder-btn" (click)="openLocalFolder()" id="empty-open-folder-btn">
+                <lucide-icon name="folder-open"></lucide-icon> Open Local Folder
+              </button>
+              <button class="devpilot-dashboard__create-btn" (click)="createModalOpen.set(true)" id="empty-create-project-btn">
+                <lucide-icon name="plus"></lucide-icon> Create Project
+              </button>
+            </div>
+          </div>
+        }
+
         @for (project of projects(); track project.id) {
-          <div class="devpilot-dashboard__project-card dp-glass">
-            <div class="devpilot-dashboard__project-icon"><lucide-icon [name]="getTechIcon(project.technology)"></lucide-icon></div>
+          <div class="devpilot-dashboard__project-card dp-glass" [class.devpilot-dashboard__project-card--inaccessible]="project.isAccessible === false">
+            <div class="devpilot-dashboard__project-card-top">
+              <div class="devpilot-dashboard__project-icon"><lucide-icon [name]="getTechIcon(project.technology)"></lucide-icon></div>
+              @if (project.isAccessible === false) {
+                <span class="devpilot-dashboard__inaccessible-pill" title="Local directory not found or inaccessible on disk">
+                  <lucide-icon name="triangle-alert" size="12"></lucide-icon> Missing Folder
+                </span>
+              }
+            </div>
+
             <div class="devpilot-dashboard__project-info">
-              <div class="devpilot-dashboard__project-name">{{ project.name }}</div>
+              <div class="devpilot-dashboard__project-name" [title]="project.displayName || project.name">
+                {{ project.displayName || project.name }}
+              </div>
               @if (project.localPath) {
-                <div class="devpilot-dashboard__project-path" [title]="project.localPath" style="font-size: 11px; color: var(--dp-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; margin-top: 2px;">
+                <div class="devpilot-dashboard__project-path" [title]="project.localPath">
                   {{ project.localPath }}
                 </div>
               }
-              <div class="devpilot-dashboard__project-tech">{{ project.language }}</div>
+              <div class="devpilot-dashboard__project-tech">
+                {{ project.technology | titlecase }} &bull; {{ project.projectType === 'local' ? 'Local Workspace' : 'Cloud Project' }}
+              </div>
               <div class="devpilot-dashboard__project-meta">
-                <span class="devpilot-dashboard__project-updated">Updated {{ getRelativeTime(project.updatedAt) }}</span>
+                <span class="devpilot-dashboard__project-updated" [title]="project.updatedAt">
+                  {{ project.lastOpenedAt ? ('Opened ' + getRelativeTime(project.lastOpenedAt)) : ('Updated ' + getRelativeTime(project.updatedAt)) }}
+                </span>
                 <span class="devpilot-dashboard__status" [class]="getStatusClass(project.status)">
                   <span class="devpilot-dashboard__status-dot"></span>
                   {{ project.status | titlecase }}
                 </span>
               </div>
             </div>
+
             <div class="devpilot-dashboard__project-actions">
               <button class="devpilot-dashboard__project-btn devpilot-dashboard__project-btn--primary" (click)="openProject(project)">
                 Open
               </button>
-              <button class="devpilot-dashboard__project-btn devpilot-dashboard__project-btn--danger" (click)="deleteProject(project, $event)">
-                <lucide-icon name="trash-2" size="14"></lucide-icon> Delete
+              <button class="devpilot-dashboard__project-btn devpilot-dashboard__project-btn--icon" (click)="openEditModal(project, $event)" title="Edit metadata">
+                <lucide-icon name="pencil" size="13"></lucide-icon>
+              </button>
+              <button class="devpilot-dashboard__project-btn devpilot-dashboard__project-btn--danger devpilot-dashboard__project-btn--icon" (click)="deleteProject(project, $event)" title="Delete / Unlink project">
+                <lucide-icon name="trash-2" size="13"></lucide-icon>
               </button>
             </div>
           </div>
         }
 
         <!-- Create Card -->
-        <div class="devpilot-dashboard__create-card dp-glass" (click)="createModalOpen.set(true)">
+        <div class="devpilot-dashboard__create-card dp-glass" (click)="createModalOpen.set(true)" id="create-project-card">
           <div class="devpilot-dashboard__create-card-icon"><lucide-icon name="plus"></lucide-icon></div>
           <div class="devpilot-dashboard__create-card-label">Create Project</div>
           <p class="devpilot-dashboard__create-card-desc">Start building something new</p>
@@ -105,13 +164,13 @@
   <div class="devpilot-dashboard__section dp-fade-in">
     <h2 class="devpilot-dashboard__section-title">Quick Actions</h2>
     <div class="devpilot-dashboard__quick-grid">
-      <button class="devpilot-dashboard__quick-card dp-glass">
-        <span class="devpilot-dashboard__quick-icon"><lucide-icon name="bot"></lucide-icon></span>
-        <span class="devpilot-dashboard__quick-label">Ask AI</span>
+      <button class="devpilot-dashboard__quick-card dp-glass" (click)="createModalOpen.set(true)">
+        <span class="devpilot-dashboard__quick-icon"><lucide-icon name="plus"></lucide-icon></span>
+        <span class="devpilot-dashboard__quick-label">New Project</span>
       </button>
-      <button class="devpilot-dashboard__quick-card dp-glass">
-        <span class="devpilot-dashboard__quick-icon"><lucide-icon name="file-text"></lucide-icon></span>
-        <span class="devpilot-dashboard__quick-label">Generate Docs</span>
+      <button class="devpilot-dashboard__quick-card dp-glass" (click)="loadProjects(true)">
+        <span class="devpilot-dashboard__quick-icon"><lucide-icon name="refresh-cw"></lucide-icon></span>
+        <span class="devpilot-dashboard__quick-label">Refresh Projects</span>
       </button>
       <button class="devpilot-dashboard__quick-card dp-glass">
         <span class="devpilot-dashboard__quick-icon"><lucide-icon name="rocket"></lucide-icon></span>
@@ -132,6 +191,89 @@
   (projectCreated)="onProjectCreated($event)"
 ></app-create-project-modal>
 
+<!-- Open Local Folder Modal -->
+<app-open-folder-modal
+  [isVisible]="openFolderModalOpen()"
+  (closed)="openFolderModalOpen.set(false)"
+  (folderOpened)="onProjectCreated($event)"
+></app-open-folder-modal>
+
+<!-- Edit Project Metadata Modal -->
+@if (projectToEdit()) {
+  <div class="devpilot-modal-overlay dp-fade-in" (click)="closeEditModal()">
+    <div class="devpilot-modal-content dp-glass" (click)="$event.stopPropagation()">
+      <div class="devpilot-modal-header">
+        <h3>Edit Project Metadata</h3>
+        <button class="devpilot-modal-close" (click)="closeEditModal()"><lucide-icon name="x" size="20"></lucide-icon></button>
+      </div>
+      <div class="devpilot-modal-body">
+        <div class="devpilot-form-group">
+          <label class="devpilot-label">Display Name</label>
+          <input type="text" class="devpilot-input" [ngModel]="editDisplayName()" (ngModelChange)="editDisplayName.set($event)" placeholder="Project Display Name" maxlength="100" />
+        </div>
+        <div class="devpilot-form-group">
+          <label class="devpilot-label">Description</label>
+          <textarea class="devpilot-textarea" [ngModel]="editDescription()" (ngModelChange)="editDescription.set($event)" placeholder="Project description" rows="3" maxlength="200"></textarea>
+        </div>
+        <div class="devpilot-form-group">
+          <label class="devpilot-label">Git Repository</label>
+          <input type="text" class="devpilot-input" [ngModel]="editGitRepo()" (ngModelChange)="editGitRepo.set($event)" placeholder="https://github.com/user/repo.git" />
+        </div>
+        <div class="devpilot-form-group">
+          <label class="devpilot-label">Git Branch</label>
+          <input type="text" class="devpilot-input" [ngModel]="editGitBranch()" (ngModelChange)="editGitBranch.set($event)" placeholder="main" />
+        </div>
+        <div class="devpilot-form-group">
+          <label class="devpilot-label">Status</label>
+          <select class="devpilot-select" [ngModel]="editStatus()" (ngModelChange)="editStatus.set($event)">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+      </div>
+      <div class="devpilot-modal-footer">
+        <button class="devpilot-btn devpilot-btn--secondary" (click)="closeEditModal()" [disabled]="isEditing()">Cancel</button>
+        <button class="devpilot-btn devpilot-btn--primary" (click)="saveEdit()" [disabled]="isEditing()">
+          {{ isEditing() ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Inaccessible Workspace Recovery Modal -->
+@if (inaccessibleProject()) {
+  <div class="devpilot-modal-overlay dp-fade-in" (click)="closeInaccessibleModal()">
+    <div class="devpilot-modal-content dp-glass" (click)="$event.stopPropagation()" style="max-width: 480px;">
+      <div class="devpilot-modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <lucide-icon name="triangle-alert" size="20" style="color: #f59e0b;"></lucide-icon>
+          <h3 style="margin: 0;">Workspace Unavailable</h3>
+        </div>
+        <button class="devpilot-modal-close" (click)="closeInaccessibleModal()"><lucide-icon name="x" size="20"></lucide-icon></button>
+      </div>
+      <div class="devpilot-modal-body">
+        <p>The local directory for <strong>"{{ inaccessibleProject()?.displayName || inaccessibleProject()?.name }}"</strong> is missing or cannot be accessed on this machine.</p>
+        <div style="margin: 12px 0; padding: 10px 12px; background: rgba(0,0,0,0.3); border-radius: 6px; font-family: monospace; font-size: 12px; color: #fbbf24; word-break: break-all;">
+          {{ inaccessibleProject()?.localPath }}
+        </div>
+        <p style="font-size: 13px; color: var(--dp-text-tertiary);">
+          The folder may have been renamed, moved, or deleted outside DevPilot. You can re-check the path, locate the moved folder, or unlink the project metadata from DevPilot.
+        </p>
+      </div>
+      <div class="devpilot-modal-footer" style="flex-wrap: wrap; gap: 8px;">
+        <button class="devpilot-btn devpilot-btn--secondary" (click)="closeInaccessibleModal()">Cancel</button>
+        <button class="devpilot-btn devpilot-btn--danger" (click)="unlinkInaccessibleProject()" title="Remove project from DevPilot">Unlink</button>
+        <button class="devpilot-btn devpilot-btn--secondary" (click)="relocateInaccessibleProject()">Relocate Folder</button>
+        <button class="devpilot-btn devpilot-btn--primary" (click)="retryInaccessibleCheck()" [disabled]="isCheckingPath()">
+          {{ isCheckingPath() ? 'Checking...' : 'Check Again' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
 <!-- Delete Confirmation Modal -->
 @if (projectToDelete()) {
   <div class="devpilot-modal-overlay dp-fade-in" (click)="cancelDelete()">
@@ -141,12 +283,20 @@
         <button class="devpilot-modal-close" (click)="cancelDelete()"><lucide-icon name="x" size="20"></lucide-icon></button>
       </div>
       <div class="devpilot-modal-body">
-        <p>Are you sure you want to delete the project <strong>"{{ projectToDelete()?.name }}"</strong>?</p>
-        <p style="margin-top: 8px; font-size: 13px; color: #ff6b6b;">For local projects, this will permanently delete the project folder and its files from your computer.</p>
+        <p>Are you sure you want to remove <strong>"{{ projectToDelete()?.displayName || projectToDelete()?.name }}"</strong>?</p>
+        @if (projectToDelete()?.isImported) {
+          <p style="margin-top: 10px; font-size: 13px; color: var(--dp-text-secondary);">
+            This will unlink the project from DevPilot. Your files and folders on your computer at <code style="color: #60a5fa;">{{ projectToDelete()?.localPath }}</code> will remain completely untouched.
+          </p>
+        } @else {
+          <p style="margin-top: 10px; font-size: 13px; color: #f87171;">
+            This will remove the project metadata from DevPilot.
+          </p>
+        }
       </div>
       <div class="devpilot-modal-footer">
         <button class="devpilot-btn devpilot-btn--secondary" (click)="cancelDelete()">Cancel</button>
-        <button class="devpilot-btn devpilot-btn--danger" (click)="confirmDelete()">Delete Project</button>
+        <button class="devpilot-btn devpilot-btn--danger" (click)="confirmDelete()">Confirm Delete</button>
       </div>
     </div>
   </div>

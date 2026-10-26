@@ -72,6 +72,44 @@
   box-shadow: 0 8px 24px rgba(99,102,241,0.45);
 }
 
+.devpilot-dashboard__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.devpilot-dashboard__open-folder-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--dp-radius-sm);
+  background: var(--dp-surface);
+  border: 1px solid var(--dp-surface-border);
+  color: var(--dp-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  transition: all var(--dp-transition);
+  white-space: nowrap;
+}
+
+.devpilot-dashboard__open-folder-btn:hover {
+  background: var(--dp-surface-hover);
+  border-color: var(--dp-accent);
+  color: var(--dp-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.2);
+}
+
+.devpilot-dashboard__empty-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
 /* Stats */
 .devpilot-dashboard__stats {
   display: grid;
@@ -475,4 +513,178 @@
   .devpilot-dashboard__stats { grid-template-columns: repeat(2, 1fr); }
   .devpilot-dashboard__projects-grid { grid-template-columns: 1fr; }
   .devpilot-dashboard__quick-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Error Banner */
+.devpilot-dashboard__error-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: var(--dp-radius-sm);
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  margin-bottom: 24px;
+}
+
+.devpilot-dashboard__error-icon {
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.devpilot-dashboard__error-info {
+  flex: 1;
+}
+
+.devpilot-dashboard__error-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f87171;
+  margin-bottom: 2px;
+}
+
+.devpilot-dashboard__error-desc {
+  font-size: 13px;
+  color: var(--dp-text-secondary);
+}
+
+.devpilot-dashboard__retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--dp-radius-xs);
+  background: var(--dp-surface-strong);
+  color: var(--dp-text-primary);
+  border: 1px solid var(--dp-surface-border);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--dp-transition-fast);
+}
+
+.devpilot-dashboard__retry-btn:hover {
+  background: var(--dp-accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* Empty State Card */
+.devpilot-dashboard__empty-card {
+  padding: 32px 20px;
+  border-radius: var(--dp-radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 160px;
+  border: 1px dashed var(--dp-surface-border);
+}
+
+.devpilot-dashboard__empty-icon {
+  color: var(--dp-text-tertiary);
+  margin-bottom: 8px;
+}
+
+.devpilot-dashboard__empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dp-text-primary);
+  margin-bottom: 4px;
+}
+
+.devpilot-dashboard__empty-desc {
+  font-size: 12px;
+  color: var(--dp-text-secondary);
+  margin: 0;
+}
+
+/* Project Card Top & Inaccessible Badge */
+.devpilot-dashboard__project-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.devpilot-dashboard__inaccessible-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.devpilot-dashboard__project-card--inaccessible {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.devpilot-dashboard__project-path {
+  font-size: 11px;
+  font-family: var(--dp-font-mono, monospace);
+  color: var(--dp-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 240px;
+  margin-top: 2px;
+}
+
+/* Edit Modal Form Controls */
+.devpilot-form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.devpilot-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dp-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.devpilot-input,
+.devpilot-textarea,
+.devpilot-select {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--dp-surface-border);
+  color: var(--dp-text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  transition: all var(--dp-transition-fast);
+}
+
+.devpilot-input:focus,
+.devpilot-textarea:focus,
+.devpilot-select:focus {
+  outline: none;
+  border-color: var(--dp-accent);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+
+.devpilot-btn--primary {
+  background: var(--dp-accent);
+  color: #fff;
+}
+
+.devpilot-btn--primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.devpilot-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

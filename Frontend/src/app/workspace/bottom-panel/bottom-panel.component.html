@@ -12,29 +12,108 @@
         </button>
       }
     </div>
+
     <div class="devpilot-panel__header-actions">
-      <span class="devpilot-panel__cwd">~/e-commerce-api</span>
+      <!-- Terminal Session Controls (only visible when terminal tab is active) -->
+      @if (activeTab() === 'terminal') {
+        <div class="devpilot-panel__session-tabs">
+          @for (s of sessions(); track s.id) {
+            <button
+              class="devpilot-panel__session-tab"
+              [class.devpilot-panel__session-tab--active]="activeSessionId() === s.id"
+              (click)="selectSession(s.id)"
+              title="{{ s.title }}"
+            >
+              <span
+                class="devpilot-panel__status-dot"
+                [class.devpilot-panel__status-dot--connected]="s.status === 'connected'"
+                [class.devpilot-panel__status-dot--connecting]="s.status === 'connecting'"
+                [class.devpilot-panel__status-dot--error]="s.status === 'error'"
+                [class.devpilot-panel__status-dot--exited]="s.status === 'exited'"
+              ></span>
+              <span class="devpilot-panel__session-title">{{ s.title }}</span>
+              @if (sessions().length > 1) {
+                <span
+                  class="devpilot-panel__session-close"
+                  (click)="closeSession($event, s.id)"
+                  title="Close terminal"
+                >
+                  <lucide-icon name="x" [style]="{'width':'11px','height':'11px'}"></lucide-icon>
+                </span>
+              }
+            </button>
+          }
+
+          <!-- Add new terminal button -->
+          @if (sessions().length < 3) {
+            <button
+              class="devpilot-panel__icon-btn"
+              (click)="addSession()"
+              title="New Terminal"
+            >
+              <lucide-icon name="plus" [style]="{'width':'13px','height':'13px'}"></lucide-icon>
+            </button>
+          }
+
+          <!-- Clear terminal output -->
+          <button
+            class="devpilot-panel__icon-btn"
+            (click)="clearActiveTerminal()"
+            title="Clear Terminal Output"
+          >
+            <lucide-icon name="trash-2" [style]="{'width':'13px','height':'13px'}"></lucide-icon>
+          </button>
+
+          <!-- Restart session -->
+          <button
+            class="devpilot-panel__icon-btn"
+            (click)="restartCurrentSession()"
+            title="Restart Terminal Process"
+          >
+            <lucide-icon name="refresh-cw" [style]="{'width':'13px','height':'13px'}"></lucide-icon>
+          </button>
+        </div>
+      }
+
+      <!-- Working Directory Display (Click to reset shell to project root) -->
+      <span
+        class="devpilot-panel__cwd"
+        style="cursor: pointer;"
+        (click)="cdToProjectRoot()"
+        title="Click to reset terminal working directory to: {{ activeProject()?.localPath || '~/workspace' }}"
+      >
+        {{ activeProject()?.localPath || '~/workspace' }}
+      </span>
     </div>
   </div>
 
-  <!-- Terminal -->
-  @if (activeTab() === 'terminal') {
-    <div class="devpilot-panel__terminal dp-scroll">
-      @for (line of terminalLines(); track $index) {
-        <div class="devpilot-panel__terminal-line devpilot-panel__terminal-line--{{ line.type }}">
-          @if (line.type === 'command') {
-            <span class="devpilot-panel__prompt">$</span>
-          }
-          <span>{{ line.text }}</span>
-        </div>
-      }
-      <!-- Active cursor -->
-      <div class="devpilot-panel__cursor-line">
-        <span class="devpilot-panel__prompt">$</span>
-        <span class="devpilot-panel__cursor"></span>
+  <!-- Terminal (kept alive across tab switches via [hidden] to preserve PTY state) -->
+  <div class="devpilot-panel__terminal-wrapper" [hidden]="activeTab() !== 'terminal'">
+    <!-- Status / Error Banner -->
+    @if (currentSession()?.status === 'error') {
+      <div class="devpilot-panel__banner devpilot-panel__banner--error">
+        <lucide-icon name="circle-x" [style]="{'width':'13px','height':'13px'}"></lucide-icon>
+        <span class="devpilot-panel__banner-text">{{ currentSession()?.error }}</span>
+        <button class="devpilot-panel__btn-action" (click)="restartCurrentSession()">Reconnect</button>
       </div>
-    </div>
-  }
+    } @else if (currentSession()?.status === 'connecting') {
+      <div class="devpilot-panel__banner devpilot-panel__banner--connecting">
+        <lucide-icon name="loader" class="dp-spin" [style]="{'width':'13px','height':'13px'}"></lucide-icon>
+        <span class="devpilot-panel__banner-text">Connecting to real PowerShell terminal...</span>
+      </div>
+    } @else if (currentSession()?.status === 'exited') {
+      <div class="devpilot-panel__banner devpilot-panel__banner--info">
+        <lucide-icon name="terminal" [style]="{'width':'13px','height':'13px'}"></lucide-icon>
+        <span class="devpilot-panel__banner-text">
+          Process completed with exit code {{ currentSession()?.exitCode ?? 0 }}.
+        </span>
+        <button class="devpilot-panel__btn-action" (click)="restartCurrentSession()">New Session</button>
+      </div>
+    }
+
+    <!-- xterm.js mount host -->
+    <div #terminalContainer class="devpilot-panel__xterm-host"></div>
+  </div>
 
   <!-- Problems -->
   @if (activeTab() === 'problems') {

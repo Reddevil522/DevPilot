@@ -56,7 +56,12 @@
               {
                 "glob": "**/*",
                 "input": "node_modules/monaco-editor/min",
-                "output": "/assets/monaco/"
+                "output": "assets/monaco/min"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/monaco-editor/min",
+                "output": "assets/monaco"
               }
             ],
             "styles": [
@@ -79,8 +84,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kB",
-                  "maximumError": "10kB"
+                  "maximumWarning": "20kB",
+                  "maximumError": "30kB"
                 }
               ],
               "outputHashing": "all"

@@ -34,12 +34,18 @@
     <span class="devpilot-ai__context-label">Using</span>
     <span class="devpilot-ai__context-tag">
       <span class="devpilot-ai__context-dot devpilot-ai__context-dot--file"></span>
-      {{ context().currentFile || 'app.ts' }}
+      {{ context().currentFile || 'No file selected' }}
     </span>
     <span class="devpilot-ai__context-tag">
       <span class="devpilot-ai__context-dot devpilot-ai__context-dot--project"></span>
       {{ context().projectName || projectName || 'Project' }}
     </span>
+    @if (context().selectedCode) {
+      <span class="devpilot-ai__context-tag devpilot-ai__context-tag--selection">
+        <span class="devpilot-ai__context-dot devpilot-ai__context-dot--selection"></span>
+        Selection ({{ getSelectedLineCount() }} lines)
+      </span>
+    }
   </div>
 
   <!-- Messages -->
@@ -49,8 +55,98 @@
         @if (msg.role === 'assistant') {
           <div class="devpilot-ai__avatar"><lucide-icon name="bot" [style]="{'width': '16px', 'height': '16px'}"></lucide-icon></div>
         }
-        <div class="devpilot-ai__bubble">
+        <div class="devpilot-ai__bubble" [class.devpilot-ai__bubble--error]="msg.isError">
           <div class="devpilot-ai__content" [innerHTML]="formatContent(msg.content)"></div>
+
+          <!-- Structured Proposed Changes Review Card -->
+          @if (msg.proposal) {
+            <div class="devpilot-ai__proposal">
+              <div class="devpilot-ai__proposal-header">
+                <div class="devpilot-ai__proposal-title">
+                  <lucide-icon name="file-code" [style]="{'width': '15px', 'height': '15px'}"></lucide-icon>
+                  <span>{{ msg.proposal.summary || 'Proposed File Changes' }}</span>
+                </div>
+                <span class="devpilot-ai__proposal-badge devpilot-ai__proposal-badge--{{ msg.proposal.status }}">
+                  @if (msg.proposal.status === 'pending') { Pending Approval }
+                  @if (msg.proposal.status === 'applied') { Applied }
+                  @if (msg.proposal.status === 'rejected') { Rejected }
+                </span>
+              </div>
+
+              <!-- Changes list -->
+              <div class="devpilot-ai__changes-list">
+                @for (change of msg.proposal.changes; track change.path; let idx = $index) {
+                  <div class="devpilot-ai__change-item">
+                    <div class="devpilot-ai__change-item-header">
+                      <div class="devpilot-ai__change-item-meta">
+                        <span class="devpilot-ai__op-badge devpilot-ai__op-badge--{{ change.operation }}">
+                          {{ change.operation | uppercase }}
+                        </span>
+                        <span class="devpilot-ai__change-path" title="{{ change.path }}">{{ change.path }}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        class="devpilot-ai__diff-toggle-btn" 
+                        (click)="toggleDiff(msg.id + '-' + idx)">
+                        {{ isDiffExpanded(msg.id + '-' + idx) ? 'Hide Diff' : 'Review Changes' }}
+                      </button>
+                    </div>
+
+                    <!-- Diff Viewer -->
+                    @if (isDiffExpanded(msg.id + '-' + idx)) {
+                      <div class="devpilot-ai__diff-viewer dp-scroll">
+                        @for (line of getDiffLines(change); track $index) {
+                          <div class="devpilot-ai__diff-line devpilot-ai__diff-line--{{ line.type }}">
+                            <span class="devpilot-ai__diff-marker">
+                              @if (line.type === 'added') { + }
+                              @else if (line.type === 'removed') { - }
+                              @else { &nbsp; }
+                            </span>
+                            <span class="devpilot-ai__diff-code">{{ line.text }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Approval Actions -->
+              <div class="devpilot-ai__proposal-actions">
+                @if (msg.proposal.status === 'pending') {
+                  <button 
+                    type="button" 
+                    class="devpilot-ai__btn-apply" 
+                    (click)="applyChanges(msg)" 
+                    [disabled]="isApplyingChange()">
+                    <lucide-icon name="check" [style]="{'width': '14px', 'height': '14px'}"></lucide-icon>
+                    <span>{{ isApplyingChange() ? 'Applying...' : 'Apply Changes' }}</span>
+                  </button>
+                  <button 
+                    type="button" 
+                    class="devpilot-ai__btn-reject" 
+                    (click)="rejectChanges(msg)" 
+                    [disabled]="isApplyingChange()">
+                    <lucide-icon name="x" [style]="{'width': '14px', 'height': '14px'}"></lucide-icon>
+                    <span>Reject Changes</span>
+                  </button>
+                }
+                @if (msg.proposal.status === 'applied') {
+                  <div class="devpilot-ai__status-notice devpilot-ai__status-notice--applied">
+                    <lucide-icon name="check" [style]="{'width': '14px', 'height': '14px'}"></lucide-icon>
+                    <span>Changes applied to local filesystem</span>
+                  </div>
+                }
+                @if (msg.proposal.status === 'rejected') {
+                  <div class="devpilot-ai__status-notice devpilot-ai__status-notice--rejected">
+                    <lucide-icon name="x" [style]="{'width': '14px', 'height': '14px'}"></lucide-icon>
+                    <span>Changes rejected (disk unchanged)</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
           <div class="devpilot-ai__timestamp">{{ msg.timestamp | date:'HH:mm' }}</div>
         </div>
         @if (msg.role === 'user') {
@@ -115,9 +211,6 @@
         id="ai-input"
       ></textarea>
       <div class="devpilot-ai__composer-actions">
-        <button class="devpilot-ai__attach-btn" title="Attach file">
-          <lucide-icon name="paperclip" [style]="{'width': '14px', 'height': '14px'}"></lucide-icon>
-        </button>
         <button
           class="devpilot-ai__send-btn"
           (click)="sendMessage()"

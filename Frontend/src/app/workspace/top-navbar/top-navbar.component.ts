@@ -8,6 +8,8 @@ import { AiService } from '../../core/services/ai.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SharedIconsModule } from '../../shared/shared-icons.module';
 
+import { OpenFolderModalComponent } from '../../shared/components/open-folder-modal/open-folder-modal.component';
+
 interface AppNotification {
   id: number;
   icon: string;
@@ -26,7 +28,7 @@ const MOCK_NOTIFICATIONS: AppNotification[] = [
 @Component({
   selector: 'app-top-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink, SharedIconsModule],
+  imports: [CommonModule, RouterLink, SharedIconsModule, OpenFolderModalComponent],
   templateUrl: './top-navbar.component.html',
   styleUrl: './top-navbar.component.css'
 })
@@ -48,9 +50,20 @@ export class TopNavbarComponent {
   readonly profileOpen = signal(false);
   readonly notifOpen = signal(false);
   readonly projectSwitcherOpen = signal(false);
+  readonly openFolderModalOpen = signal(false);
 
   readonly notifications = signal<AppNotification[]>([...MOCK_NOTIFICATIONS]);
   readonly unreadCount = signal(MOCK_NOTIFICATIONS.filter((n) => !n.read).length);
+
+  openLocalFolder(): void {
+    this.projectSwitcherOpen.set(false);
+    this.openFolderModalOpen.set(true);
+  }
+
+  onFolderOpened(project: any): void {
+    this.openFolderModalOpen.set(false);
+    this.router.navigate(['/projects', project.id]);
+  }
 
   toggleTheme(): void { this.themeService.toggle(); }
 

@@ -18,6 +18,102 @@ const SKIP_DIRS = new Set([
 ]);
 
 /**
+ * Check whether a target path is an OS system root or protected directory.
+ * @param {string} targetPath
+ * @returns {boolean}
+ */
+function isSystemPath(targetPath) {
+  if (!targetPath || typeof targetPath !== 'string') return true;
+  try {
+    const resolved = path.resolve(targetPath);
+    const parsed = path.parse(resolved);
+
+    // Root check (e.g. C:\ or /)
+    if (resolved.toLowerCase() === parsed.root.toLowerCase() || resolved === path.dirname(resolved)) {
+      return true;
+    }
+
+    if (process.platform === 'win32') {
+      const lower = resolved.toLowerCase();
+      const winDir = (process.env.WINDIR || 'C:\\Windows').toLowerCase();
+      const progFiles = (process.env.ProgramFiles || 'C:\\Program Files').toLowerCase();
+      const progFilesX86 = (process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)').toLowerCase();
+      const sysRoot = (process.env.SystemRoot || 'C:\\Windows').toLowerCase();
+
+      if (
+        lower === winDir || lower.startsWith(winDir + '\\') ||
+        lower === progFiles || lower.startsWith(progFiles + '\\') ||
+        lower === progFilesX86 || lower.startsWith(progFilesX86 + '\\') ||
+        lower === sysRoot || lower.startsWith(sysRoot + '\\') ||
+        lower.includes('$recycle.bin') ||
+        lower.includes('system volume information')
+      ) {
+        return true;
+      }
+    } else {
+      const blockedPrefixes = ['/bin', '/sbin', '/usr', '/etc', '/var', '/proc', '/sys', '/dev', '/boot', '/lib', '/lib64', '/root', '/lost+found'];
+      for (const prefix of blockedPrefixes) {
+        if (resolved === prefix || resolved.startsWith(prefix + '/')) {
+          return true;
+        }
+      }
+    }
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Check if a directory path exists and is accessible.
+ * @param {string} dirPath
+ * @returns {Promise<boolean>}
+ */
+async function checkPathAccessible(dirPath) {
+  if (!dirPath || typeof dirPath !== 'string') return false;
+  try {
+    const stat = await fs.stat(dirPath);
+    return stat.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Auto-detect project technology from existing files in a directory.
+ * @param {string} dirPath
+ * @returns {Promise<{ tech: string, lang: string }>}
+ */
+async function detectTechnology(dirPath) {
+  try {
+    const pkgPath = path.join(dirPath, 'package.json');
+    const pkgStat = await fs.stat(pkgPath).catch(() => null);
+    if (pkgStat && pkgStat.isFile()) {
+      const raw = await fs.readFile(pkgPath, 'utf8');
+      const pkg = JSON.parse(raw);
+      const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+
+      if (deps['@angular/core']) return { tech: 'angular', lang: 'TypeScript' };
+      if (deps['react'] || deps['next']) return { tech: 'react', lang: 'JavaScript' };
+      if (deps['express'] || deps['koa'] || deps['fastify']) return { tech: 'express', lang: 'JavaScript' };
+      return { tech: 'nodejs', lang: 'JavaScript' };
+    }
+
+    const entries = await fs.readdir(dirPath).catch(() => []);
+    if (entries.some(e => e.endsWith('.py') || e === 'requirements.txt' || e === 'Pipfile')) {
+      return { tech: 'custom', lang: 'Python' };
+    }
+    if (entries.some(e => e.endsWith('.rs') || e === 'Cargo.toml')) {
+      return { tech: 'custom', lang: 'Rust' };
+    }
+    if (entries.some(e => e.endsWith('.go') || e === 'go.mod')) {
+      return { tech: 'custom', lang: 'Go' };
+    }
+  } catch (_) {}
+  return { tech: 'custom', lang: 'JavaScript' };
+}
+
+/**
  * Build a shallow (depth-1) file tree for a directory.
  * Folders are returned with childrenLoaded=false and an empty children array
  * so the client can request children lazily when the user expands the folder.
@@ -174,6 +270,7 @@ exports.createProject = async (req, res, next) => {
     const project = await Project.create({
       _id: projectId,
       name,
+      displayName: name,
       slug,
       description: description || '',
       technology: resolvedTech,
@@ -182,6 +279,7 @@ exports.createProject = async (req, res, next) => {
       localPath: projectType === 'local' ? projectDir : undefined,
       ownerId: req.user.id,
       status: 'active',
+      isImported: false,
       lastOpenedAt: new Date(),
       syncStatus: 'LOCAL_ONLY',
       language: resolvedTech === 'angular' ? 'TypeScript' : 'JavaScript',
@@ -299,6 +397,7 @@ exports.createProjectStream = async (req, res, next) => {
     const project = await Project.create({
       _id: projectId,
       name,
+      displayName: name,
       slug,
       description: description || '',
       technology: resolvedTech,
@@ -307,6 +406,7 @@ exports.createProjectStream = async (req, res, next) => {
       localPath: projectType === 'local' ? projectDir : undefined,
       ownerId: req.user.id,
       status: 'active',
+      isImported: false,
       lastOpenedAt: new Date(),
       syncStatus: 'LOCAL_ONLY',
       language: resolvedTech === 'angular' ? 'TypeScript' : 'JavaScript',
@@ -325,28 +425,343 @@ exports.createProjectStream = async (req, res, next) => {
   }
 };
 
-// @desc    Get all projects for authenticated user (sorted by recent usage)
+// @desc    Register an existing local directory as a DevPilot project (no scaffolding, metadata only)
+// @route   POST /api/projects/open-folder
+// @desc    Register an existing local directory as a DevPilot workspace
+// @route   POST /api/projects/open-folder
+// @access  Private
+exports.registerExistingFolder = async (req, res, next) => {
+  try {
+    let { localPath, name, displayName, description, technology } = req.body;
+
+    if (!localPath || typeof localPath !== 'string' || !localPath.trim()) {
+      return res.status(400).json({ success: false, message: 'Local path is required' });
+    }
+
+    const resolvedPath = path.resolve(localPath.trim());
+
+    // Security check 1: reject obvious system roots & OS directories
+    if (isSystemPath(resolvedPath)) {
+      return res.status(400).json({
+        success: false,
+        message: 'System roots and OS system directories cannot be registered as project workspaces.'
+      });
+    }
+
+    // Resolve canonical path (following symlinks to prevent bypass)
+    let realRoot;
+    try {
+      realRoot = await fs.realpath(resolvedPath);
+    } catch (rpErr) {
+      if (rpErr.code === 'ENOENT') {
+        return res.status(404).json({
+          success: false,
+          message: `Directory "${resolvedPath}" does not exist.`
+        });
+      }
+      if (rpErr.code === 'EACCES' || rpErr.code === 'EPERM') {
+        return res.status(403).json({
+          success: false,
+          message: `Permission denied: Cannot access directory "${resolvedPath}". Restricted permissions.`
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: `Failed to resolve path "${resolvedPath}": ${rpErr.message}`
+      });
+    }
+
+    // Security check 2: check canonical real path against system paths
+    if (isSystemPath(realRoot)) {
+      return res.status(400).json({
+        success: false,
+        message: 'System roots and OS system directories cannot be registered as project workspaces.'
+      });
+    }
+
+    // Filesystem verification: must be a directory
+    const stat = await fs.stat(realRoot);
+    if (!stat.isDirectory()) {
+      return res.status(400).json({
+        success: false,
+        message: `Path "${realRoot}" is a file, not a directory.`
+      });
+    }
+
+    // Validate read permissions explicitly
+    try {
+      await fs.access(realRoot, fs.constants.R_OK);
+      await fs.readdir(realRoot);
+    } catch (permErr) {
+      return res.status(403).json({
+        success: false,
+        message: `Permission denied: Cannot read directory "${realRoot}". Restricted permissions.`
+      });
+    }
+
+    // Deduplication check: if already registered by this user, return existing project without creating duplicate
+    const existingByPath = await Project.findOne({ ownerId: req.user.id, localPath: realRoot });
+    if (existingByPath) {
+      existingByPath.lastOpenedAt = new Date();
+      existingByPath.status = 'active';
+      if (displayName && displayName.trim()) {
+        existingByPath.displayName = displayName.trim();
+      } else if (name && name.trim() && name.trim() !== existingByPath.name) {
+        existingByPath.displayName = name.trim();
+      }
+      await existingByPath.save();
+
+      const projectData = existingByPath.toObject();
+      projectData.isAccessible = true;
+
+      return res.status(200).json({
+        success: true,
+        data: projectData,
+        message: 'Project workspace re-opened successfully.'
+      });
+    }
+
+    // Determine project name (use supplied name or fallback to folder base name)
+    const folderBaseName = path.basename(realRoot) || 'workspace';
+    const rawName = (name && name.trim())
+      ? name.trim()
+      : ((displayName && displayName.trim())
+          ? displayName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-')
+          : folderBaseName);
+
+    // Ensure candidate project name is unique for this user if another project at different path exists
+    let candidateName = rawName;
+    let counter = 2;
+    while (await Project.findOne({ ownerId: req.user.id, name: candidateName })) {
+      candidateName = `${rawName}-${counter}`;
+      counter++;
+    }
+
+    const resolvedDisplayName = (displayName && displayName.trim())
+      ? displayName.trim()
+      : ((name && name.trim()) ? name.trim() : folderBaseName);
+
+    // Detect technology and language from existing project files
+    const detected = await detectTechnology(realRoot);
+    const finalTech = (technology && technology !== 'custom') ? technology : detected.tech;
+    const finalLang = detected.lang;
+
+    // Generate unique slug for this owner
+    const slug = await generateUniqueSlug(candidateName, req.user.id);
+    const projectId = new mongoose.Types.ObjectId();
+
+    // Write non-destructive .devpilot/project.json marker if writable (tolerates read-only gracefully)
+    try {
+      const devpilotDir = path.join(realRoot, '.devpilot');
+      await fs.mkdir(devpilotDir, { recursive: true });
+      await fs.writeFile(
+        path.join(devpilotDir, 'project.json'),
+        JSON.stringify({ projectId: projectId.toString(), version: 1, registeredAt: new Date().toISOString() }, null, 2),
+        'utf8'
+      );
+    } catch (mErr) {
+      console.warn(`[registerExistingFolder] Could not write .devpilot marker: ${mErr.message}`);
+    }
+
+    // Persist project metadata ONLY in MongoDB (no source code copied into DB)
+    const project = await Project.create({
+      _id: projectId,
+      name: candidateName,
+      displayName: resolvedDisplayName,
+      slug,
+      description: description ? description.trim() : '',
+      technology: finalTech,
+      template: 'custom',
+      projectType: 'local',
+      localPath: realRoot,
+      ownerId: req.user.id,
+      status: 'active',
+      isImported: true,
+      deletionPolicy: 'METADATA_ONLY',
+      lastOpenedAt: new Date(),
+      syncStatus: 'LOCAL_ONLY',
+      language: finalLang,
+    });
+
+    const projectData = project.toObject();
+    projectData.isAccessible = true;
+
+    return res.status(201).json({
+      success: true,
+      data: projectData,
+      message: 'Workspace folder registered successfully.'
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'A project with this name or path is already registered.'
+      });
+    }
+    next(error);
+  }
+};
+
+// @desc    Pre-flight validation of local workspace directory path
+// @route   POST /api/projects/validate-path
+// @access  Private
+exports.validateWorkspacePath = async (req, res) => {
+  try {
+    const { localPath } = req.body;
+    if (!localPath || typeof localPath !== 'string' || !localPath.trim()) {
+      return res.status(400).json({ success: false, message: 'Local path is required.' });
+    }
+
+    const resolved = path.resolve(localPath.trim());
+
+    if (isSystemPath(resolved)) {
+      return res.status(400).json({
+        success: false,
+        message: 'System roots and OS system directories cannot be used as workspaces.'
+      });
+    }
+
+    let realRoot;
+    try {
+      realRoot = await fs.realpath(resolved);
+    } catch (rpErr) {
+      if (rpErr.code === 'ENOENT') {
+        return res.status(200).json({
+          success: true,
+          exists: false,
+          isDirectory: false,
+          accessible: false,
+          resolvedPath: resolved,
+          message: 'Directory does not exist.'
+        });
+      }
+      if (rpErr.code === 'EACCES' || rpErr.code === 'EPERM') {
+        return res.status(200).json({
+          success: true,
+          exists: true,
+          isDirectory: false,
+          accessible: false,
+          resolvedPath: resolved,
+          message: 'Permission denied: Cannot access directory.'
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        exists: false,
+        isDirectory: false,
+        accessible: false,
+        resolvedPath: resolved,
+        message: rpErr.message
+      });
+    }
+
+    if (isSystemPath(realRoot)) {
+      return res.status(400).json({
+        success: false,
+        message: 'System roots and OS system directories cannot be used as workspaces.'
+      });
+    }
+
+    const stat = await fs.stat(realRoot);
+    if (!stat.isDirectory()) {
+      return res.status(200).json({
+        success: true,
+        exists: true,
+        isDirectory: false,
+        accessible: false,
+        resolvedPath: realRoot,
+        message: 'Path exists but is a file, not a directory.'
+      });
+    }
+
+    try {
+      await fs.access(realRoot, fs.constants.R_OK);
+      const entries = await fs.readdir(realRoot);
+      const detected = await detectTechnology(realRoot);
+      const folderName = path.basename(realRoot);
+
+      return res.status(200).json({
+        success: true,
+        exists: true,
+        isDirectory: true,
+        accessible: true,
+        entriesCount: entries.length,
+        resolvedPath: realRoot,
+        folderName,
+        detectedTechnology: detected.tech,
+        detectedLanguage: detected.lang
+      });
+    } catch (readErr) {
+      return res.status(200).json({
+        success: true,
+        exists: true,
+        isDirectory: true,
+        accessible: false,
+        resolvedPath: realRoot,
+        message: 'Directory exists but read permissions are restricted.'
+      });
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @desc    Get all projects for authenticated user (enriched with live filesystem accessibility)
 // @route   GET /api/projects
 // @access  Private
 exports.getProjects = async (req, res, next) => {
   try {
-    const projects = await Project.find({ ownerId: req.user.id }).sort('-lastOpenedAt -updatedAt');
+    const query = { ownerId: req.user.id };
+
+    if (req.query.status && ['active', 'inactive', 'archived'].includes(req.query.status)) {
+      query.status = req.query.status;
+    }
+
+    let queryBuilder = Project.find(query).sort('-lastOpenedAt -updatedAt');
+
+    if (req.query.limit) {
+      const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 50), 100);
+      queryBuilder = queryBuilder.limit(limit);
+    }
+    if (req.query.skip) {
+      const skip = Math.max(0, parseInt(req.query.skip, 10) || 0);
+      queryBuilder = queryBuilder.skip(skip);
+    }
+
+    const projects = await queryBuilder;
+
+    // Check filesystem accessibility for local projects
+    const enrichedProjects = await Promise.all(
+      projects.map(async (p) => {
+        const obj = p.toObject();
+        if (p.projectType === 'local' && p.localPath) {
+          obj.isAccessible = await checkPathAccessible(p.localPath);
+        } else {
+          obj.isAccessible = p.projectType === 'cloud';
+        }
+        return obj;
+      })
+    );
 
     res.status(200).json({
       success: true,
-      count: projects.length,
-      data: projects,
+      count: enrichedProjects.length,
+      data: enrichedProjects,
     });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Get single project and update lastOpenedAt
+// @desc    Get single project by ID and update lastOpenedAt
 // @route   GET /api/projects/:id
 // @access  Private
 exports.getProject = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid project ID format.' });
+    }
+
     const project = await Project.findById(req.params.id);
 
     if (!project) {
@@ -358,13 +773,54 @@ exports.getProject = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Not authorized to access this project' });
     }
 
-    // Update lastOpenedAt for recent projects tracking
+    // Update lastOpenedAt unless explicitly disabled
+    if (req.query.updateLastOpened !== 'false') {
+      project.lastOpenedAt = new Date();
+      await project.save();
+    }
+
+    const obj = project.toObject();
+    obj.isAccessible = project.projectType === 'local' && project.localPath
+      ? await checkPathAccessible(project.localPath)
+      : true;
+
+    res.status(200).json({
+      success: true,
+      data: obj,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update project last-opened timestamp explicitly
+// @route   PATCH /api/projects/:id/last-opened
+// @access  Private
+exports.updateLastOpened = async (req, res, next) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid project ID format.' });
+    }
+
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+
+    if (project.ownerId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized to access this project' });
+    }
+
     project.lastOpenedAt = new Date();
     await project.save();
 
     res.status(200).json({
       success: true,
-      data: project,
+      data: {
+        id: project.id,
+        lastOpenedAt: project.lastOpenedAt
+      }
     });
   } catch (error) {
     next(error);
@@ -376,6 +832,10 @@ exports.getProject = async (req, res, next) => {
 // @access  Private
 exports.getProjectFiles = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid project ID format.' });
+    }
+
     const t0 = Date.now();
     const project = await Project.findById(req.params.id);
 
@@ -389,6 +849,16 @@ exports.getProjectFiles = async (req, res, next) => {
 
     if (project.projectType !== 'local' || !project.localPath) {
       return res.status(400).json({ success: false, message: 'File browsing is only supported for local projects currently' });
+    }
+
+    // Verify local directory exists
+    const accessible = await checkPathAccessible(project.localPath);
+    if (!accessible) {
+      return res.status(404).json({
+        success: false,
+        message: `Project local directory "${project.localPath}" is not accessible on disk.`,
+        isAccessible: false
+      });
     }
 
     // Shallow read — only the root level. Children loaded on-demand.
@@ -405,6 +875,10 @@ exports.getProjectFiles = async (req, res, next) => {
 // @access  Private
 exports.getDirectoryChildren = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid project ID format.' });
+    }
+
     const t0 = Date.now();
     const project = await Project.findById(req.params.id);
 
@@ -441,11 +915,15 @@ exports.getDirectoryChildren = async (req, res, next) => {
   }
 };
 
-// @desc    Update project
+// @desc    Update permitted project metadata
 // @route   PATCH /api/projects/:id
 // @access  Private
 exports.updateProject = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid project ID format.' });
+    }
+
     let project = await Project.findById(req.params.id);
 
     if (!project) {
@@ -457,32 +935,77 @@ exports.updateProject = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Not authorized to update this project' });
     }
 
-    // Only allow updating specific fields
-    const { name, description, status } = req.body;
+    // Only allow updating permitted metadata fields
+    const {
+      name,
+      displayName,
+      description,
+      status,
+      gitBranch,
+      gitRepo,
+      deploymentUrl,
+      technology,
+      language,
+      localPath: newLocalPath
+    } = req.body;
+
     const updateFields = {};
-    if (name) updateFields.name = name;
-    if (description !== undefined) updateFields.description = description;
-    if (status) updateFields.status = status;
+    if (name && name.trim()) updateFields.name = name.trim();
+    if (displayName !== undefined) updateFields.displayName = displayName ? displayName.trim() : updateFields.name;
+    if (description !== undefined) updateFields.description = description.trim();
+    if (status && ['active', 'inactive', 'archived'].includes(status)) updateFields.status = status;
+    if (gitBranch !== undefined) updateFields.gitBranch = gitBranch.trim();
+    if (gitRepo !== undefined) updateFields.gitRepo = gitRepo.trim();
+    if (deploymentUrl !== undefined) updateFields.deploymentUrl = deploymentUrl.trim();
+    if (technology && ['angular', 'react', 'nodejs', 'express', 'fullstack', 'custom'].includes(technology)) {
+      updateFields.technology = technology;
+    }
+    if (language !== undefined) updateFields.language = language.trim();
+
+    // If localPath is being updated (relocated workspace), validate existence and permissions
+    if (newLocalPath && newLocalPath !== project.localPath) {
+      const resolved = path.resolve(newLocalPath.trim());
+      if (isSystemPath(resolved)) {
+        return res.status(400).json({ success: false, message: 'System directories cannot be used as workspaces.' });
+      }
+      const accessible = await checkPathAccessible(resolved);
+      if (!accessible) {
+        return res.status(400).json({ success: false, message: `Directory "${resolved}" is not accessible on disk.` });
+      }
+      updateFields.localPath = resolved;
+    }
 
     project = await Project.findByIdAndUpdate(req.params.id, updateFields, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
 
+    const obj = project.toObject();
+    obj.isAccessible = project.projectType === 'local' && project.localPath
+      ? await checkPathAccessible(project.localPath)
+      : true;
+
     res.status(200).json({
       success: true,
-      data: project,
+      data: obj,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ success: false, message: 'A project with this name already exists.' });
+    }
     next(error);
   }
 };
 
-// @desc    Delete project
+// @desc    Delete project metadata or unregister workspace (preserves files unless explicitly requested)
 // @route   DELETE /api/projects/:id
 // @access  Private
 exports.deleteProject = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid project ID format.' });
+    }
+
     const project = await Project.findById(req.params.id);
 
     if (!project) {
@@ -493,6 +1016,11 @@ exports.deleteProject = async (req, res, next) => {
     if (project.ownerId.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Not authorized to delete this project' });
     }
+
+    // Determine deletion mode:
+    // Imported/existing folders are NEVER deleted physically from disk.
+    // Scaffolded projects are only deleted physically if query ?deleteFiles=true is explicitly passed.
+    const shouldDeleteFiles = req.query.deleteFiles === 'true' && !project.isImported;
 
     if (project.projectType === 'local' && project.localPath) {
       // 1. Stop any active file watcher so Node itself is not locking the directory
@@ -506,42 +1034,46 @@ exports.deleteProject = async (req, res, next) => {
         console.warn('[deleteProject] Failed to stop watcher:', wErr);
       }
 
-      // 2. Safety check: verify identity file if it exists
-      const identityPath = path.join(project.localPath, '.devpilot', 'project.json');
-      try {
-        const identityContent = await fs.readFile(identityPath, 'utf8');
-        const identity = JSON.parse(identityContent);
-        
-        if (identity.projectId && identity.projectId !== project.id) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Project identity mismatch. Aborting physical deletion for safety.' 
-          });
-        }
-      } catch (idErr) {
-        // If identity file does not exist, proceed
-        if (idErr.code !== 'ENOENT') {
-          console.warn('[deleteProject] Identity check warning:', idErr.message);
-        }
-      }
+      // 2. Physical deletion ONLY if explicitly requested and NOT an imported folder
+      if (shouldDeleteFiles) {
+        // Safety check: verify identity file if it exists
+        const identityPath = path.join(project.localPath, '.devpilot', 'project.json');
+        try {
+          const identityContent = await fs.readFile(identityPath, 'utf8');
+          const identity = JSON.parse(identityContent);
 
-      // 3. Physically delete the local directory
-      try {
-        await fs.rm(project.localPath, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
-      } catch (rmErr) {
-        if (rmErr.code === 'ENOENT') {
-          console.log(`[deleteProject] Local folder already removed: ${project.localPath}`);
-        } else {
-          console.warn(`[deleteProject] Warning removing folder ${project.localPath}: ${rmErr.code} - ${rmErr.message}. Proceeding with database deletion.`);
+          if (identity.projectId && identity.projectId !== project.id) {
+            return res.status(400).json({
+              success: false,
+              message: 'Project identity mismatch. Aborting physical deletion for safety.'
+            });
+          }
+        } catch (idErr) {
+          if (idErr.code !== 'ENOENT') {
+            console.warn('[deleteProject] Identity check warning:', idErr.message);
+          }
+        }
+
+        try {
+          await fs.rm(project.localPath, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+        } catch (rmErr) {
+          if (rmErr.code === 'ENOENT') {
+            console.log(`[deleteProject] Local folder already removed: ${project.localPath}`);
+          } else {
+            console.warn(`[deleteProject] Warning removing folder ${project.localPath}: ${rmErr.code} - ${rmErr.message}.`);
+          }
         }
       }
     }
 
-    // 4. Always remove project metadata from MongoDB so user is never stuck
+    // 3. Remove project metadata from MongoDB
     await project.deleteOne();
 
     res.status(200).json({
       success: true,
+      message: shouldDeleteFiles
+        ? 'Project and local files deleted successfully.'
+        : 'Project unlinked from DevPilot successfully. Local files preserved.',
       data: {},
     });
   } catch (error) {

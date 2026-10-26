@@ -6,7 +6,52 @@
     </div>
   }
 
-  @if (!isLoading()) {
+  @if (!isLoading() && isNotFound()) {
+    <div class="devpilot-project__recovery dp-fade-in">
+      <div class="devpilot-project__recovery-card dp-glass">
+        <div class="devpilot-project__recovery-icon devpilot-project__recovery-icon--error">
+          <lucide-icon name="circle-x" size="32"></lucide-icon>
+        </div>
+        <div class="devpilot-project__recovery-title">Project Not Found</div>
+        <p class="devpilot-project__recovery-desc">
+          This project could not be found in MongoDB, or you do not have permission to view it.
+        </p>
+        <div class="devpilot-project__recovery-actions">
+          <button class="devpilot-btn devpilot-btn--primary" (click)="backToDashboard()">
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (!isLoading() && !isNotFound() && isInaccessible()) {
+    <div class="devpilot-project__recovery dp-fade-in">
+      <div class="devpilot-project__recovery-card dp-glass">
+        <div class="devpilot-project__recovery-icon devpilot-project__recovery-icon--warn">
+          <lucide-icon name="triangle-alert" size="32"></lucide-icon>
+        </div>
+        <div class="devpilot-project__recovery-title">Local Workspace Unavailable</div>
+        <p class="devpilot-project__recovery-desc">
+          DevPilot cannot open project files because the registered local directory is not accessible on your computer:
+        </p>
+        <div class="devpilot-project__recovery-path">{{ unavailablePath() }}</div>
+        <p class="devpilot-project__recovery-desc" style="font-size: 12px; margin-bottom: 20px;">
+          Make sure the directory exists and has appropriate read/write permissions, then retry or return to the dashboard.
+        </p>
+        <div class="devpilot-project__recovery-actions">
+          <button class="devpilot-btn devpilot-btn--secondary" (click)="backToDashboard()">
+            Back to Dashboard
+          </button>
+          <button class="devpilot-btn devpilot-btn--primary" (click)="retryLoad()">
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (!isLoading() && !isNotFound() && !isInaccessible() && project()) {
     <!-- IDE Layout -->
     <div class="devpilot-project__layout">
       <!-- Main Editor Column -->
@@ -14,7 +59,10 @@
         <!-- Toolbar -->
         <div class="devpilot-project__toolbar">
           <div class="devpilot-project__toolbar-left">
-            <span class="devpilot-project__project-name">{{ project()?.name }}</span>
+            <span class="devpilot-project__project-name">{{ project()?.displayName || project()?.name }}</span>
+            @if (project()?.localPath) {
+              <span class="devpilot-project__path-badge" [title]="project()?.localPath">{{ project()?.localPath }}</span>
+            }
           </div>
           <div class="devpilot-project__toolbar-right">
             <button class="devpilot-project__toolbar-btn" (click)="toggleBottomPanel()" title="Toggle Terminal">
@@ -27,7 +75,7 @@
 
         <!-- Editor + Bottom Panel -->
         <div class="devpilot-project__editor-area">
-          <app-editor [projectName]="project()?.name || ''"></app-editor>
+          <app-editor [projectName]="project()?.displayName || project()?.name || ''"></app-editor>
           @if (bottomPanelOpen()) {
             <app-bottom-panel></app-bottom-panel>
           }
@@ -36,7 +84,7 @@
 
       <!-- AI Panel Overlay -->
       <div class="devpilot-project__ai-col" [class.devpilot-project__ai-col--open]="aiPanelOpen()">
-        <app-ai-assistant [projectName]="project()?.name || ''" (closePanel)="toggleAiPanel()"></app-ai-assistant>
+        <app-ai-assistant [projectName]="project()?.displayName || project()?.name || ''" (closePanel)="toggleAiPanel()"></app-ai-assistant>
       </div>
     </div>
   }

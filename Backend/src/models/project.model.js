@@ -8,6 +8,11 @@ const projectSchema = new mongoose.Schema(
       trim: true,
       maxlength: [100, 'Project name cannot be more than 100 characters'],
     },
+    displayName: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Display name cannot be more than 100 characters'],
+    },
     slug: {
       type: String,
       required: true,
@@ -26,7 +31,8 @@ const projectSchema = new mongoose.Schema(
     template: {
       type: String,
       required: [true, 'Template is required'],
-      enum: ['blank', 'mean', 'mern', 'angular', 'node-api', 'ai-app'],
+      enum: ['blank', 'mean', 'mern', 'angular', 'node-api', 'ai-app', 'custom', 'none'],
+      default: 'blank',
     },
     projectType: {
       type: String,
@@ -46,6 +52,15 @@ const projectSchema = new mongoose.Schema(
     localPath: {
       type: String,
     },
+    isImported: {
+      type: Boolean,
+      default: false,
+    },
+    deletionPolicy: {
+      type: String,
+      enum: ['METADATA_ONLY', 'PERMANENT'],
+      default: 'METADATA_ONLY',
+    },
     lastOpenedAt: {
       type: Date,
       default: Date.now,
@@ -56,6 +71,10 @@ const projectSchema = new mongoose.Schema(
     gitBranch: {
       type: String,
       default: 'main',
+    },
+    gitRepo: {
+      type: String,
+      default: '',
     },
     ownerId: {
       type: mongoose.Schema.ObjectId,
@@ -114,5 +133,14 @@ projectSchema.virtual('projectName').get(function () {
 projectSchema.virtual('framework').get(function () {
   return this.technology;
 });
+
+// Virtual for dynamic filesystem accessibility
+projectSchema.virtual('isAccessible')
+  .get(function () {
+    return this._isAccessible !== undefined ? this._isAccessible : true;
+  })
+  .set(function (val) {
+    this._isAccessible = val;
+  });
 
 module.exports = mongoose.model('Project', projectSchema);

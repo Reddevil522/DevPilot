@@ -1,0 +1,331 @@
+.dp-ofmodal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--dp-overlay-bg);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.dp-ofmodal {
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: var(--dp-radius-md);
+  padding: 0;
+}
+
+.dp-ofmodal::-webkit-scrollbar { width: 4px; }
+.dp-ofmodal::-webkit-scrollbar-thumb { background: var(--dp-scrollbar-thumb); border-radius: 2px; }
+
+/* Header */
+.dp-ofmodal__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--dp-surface-border);
+}
+
+.dp-ofmodal__header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.dp-ofmodal__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--dp-text-primary);
+  margin-bottom: 2px;
+}
+
+.dp-ofmodal__subtitle {
+  font-size: 12px;
+  color: var(--dp-text-tertiary);
+}
+
+.dp-ofmodal__close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--dp-text-tertiary);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color var(--dp-transition-fast);
+}
+
+.dp-ofmodal__close:hover {
+  color: var(--dp-text-primary);
+}
+
+/* Body */
+.dp-ofmodal__body {
+  padding: 20px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dp-ofmodal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dp-ofmodal__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dp-text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dp-ofmodal__optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--dp-text-tertiary);
+  margin-left: 4px;
+}
+
+.dp-ofmodal__input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dp-ofmodal__input-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.dp-ofmodal__input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--dp-text-tertiary);
+  pointer-events: none;
+}
+
+.dp-ofmodal__input {
+  background: var(--dp-surface);
+  border: 1px solid var(--dp-surface-border);
+  border-radius: var(--dp-radius-xs);
+  color: var(--dp-text-primary);
+  font-family: var(--dp-font-mono);
+  font-size: 13px;
+  padding: 10px 12px 10px 36px;
+  outline: none;
+  transition: border-color var(--dp-transition-fast), box-shadow var(--dp-transition-fast);
+  width: 100%;
+}
+
+.dp-ofmodal__field > .dp-ofmodal__input {
+  padding-left: 12px;
+}
+
+.dp-ofmodal__input:focus {
+  border-color: var(--dp-accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.dp-ofmodal__input--error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+.dp-ofmodal__input--success {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+.dp-ofmodal__spinner {
+  position: absolute;
+  right: 12px;
+  color: var(--dp-accent);
+  display: flex;
+  align-items: center;
+}
+
+.dp-ofmodal__browse-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--dp-surface);
+  border: 1px solid var(--dp-surface-border);
+  border-radius: var(--dp-radius-xs);
+  color: var(--dp-text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--dp-transition-fast);
+}
+
+.dp-ofmodal__browse-btn:hover:not(:disabled) {
+  background: var(--dp-surface-hover);
+  border-color: var(--dp-accent);
+  color: var(--dp-accent);
+}
+
+.dp-ofmodal__browse-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dp-ofmodal__browse-btn--busy {
+  border-color: var(--dp-accent);
+  color: var(--dp-accent);
+}
+
+/* Alert */
+.dp-ofmodal__alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--dp-radius-xs);
+  font-size: 12px;
+}
+
+.dp-ofmodal__alert--error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+/* Detected Card */
+.dp-ofmodal__detected-card {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--dp-radius-xs);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dp-ofmodal__detected-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dp-ofmodal__badge-check {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.dp-ofmodal__tech-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--dp-accent);
+  letter-spacing: 0.05em;
+}
+
+.dp-ofmodal__detected-details {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dp-ofmodal__detected-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dp-text-primary);
+}
+
+.dp-ofmodal__detected-count {
+  font-size: 11px;
+  color: var(--dp-text-tertiary);
+}
+
+.dp-ofmodal__detected-path {
+  font-family: var(--dp-font-mono);
+  font-size: 11px;
+  color: var(--dp-text-secondary);
+  word-break: break-all;
+  opacity: 0.85;
+}
+
+.dp-ofmodal__hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--dp-text-tertiary);
+  padding-top: 4px;
+  line-height: 1.4;
+}
+
+/* Actions */
+.dp-ofmodal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--dp-surface-border);
+}
+
+.dp-ofmodal__btn {
+  padding: 9px 18px;
+  border-radius: var(--dp-radius-xs);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--dp-transition-fast);
+  border: none;
+}
+
+.dp-ofmodal__btn--cancel {
+  background: var(--dp-surface);
+  color: var(--dp-text-secondary);
+  border: 1px solid var(--dp-surface-border);
+}
+
+.dp-ofmodal__btn--cancel:hover:not(:disabled) {
+  background: var(--dp-surface-hover);
+  color: var(--dp-text-primary);
+}
+
+.dp-ofmodal__btn--open {
+  background: linear-gradient(135deg, var(--dp-accent), var(--dp-accent-2));
+  color: #ffffff;
+}
+
+.dp-ofmodal__btn--open:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+}
+
+.dp-ofmodal__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

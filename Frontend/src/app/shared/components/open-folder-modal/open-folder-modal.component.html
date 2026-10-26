@@ -1,0 +1,148 @@
+@if (isVisible) {
+  <div class="dp-ofmodal-overlay" (click)="close()">
+    <div class="dp-ofmodal dp-glass-panel dp-fade-in" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="dp-ofmodal__header">
+        <div class="dp-ofmodal__header-icon">
+          <lucide-icon name="folder-open" size="20"></lucide-icon>
+        </div>
+        <div>
+          <h2 class="dp-ofmodal__title">Open Local Folder</h2>
+          <p class="dp-ofmodal__subtitle">Open any existing project folder on your computer as a workspace</p>
+        </div>
+        <button class="dp-ofmodal__close" (click)="close()" title="Close dialog">×</button>
+      </div>
+
+      <div class="dp-ofmodal__body">
+        <!-- Folder Path Picker Field -->
+        <div class="dp-ofmodal__field">
+          <label class="dp-ofmodal__label" for="local-folder-input">
+            Folder Location
+          </label>
+          <div class="dp-ofmodal__input-group">
+            <div class="dp-ofmodal__input-wrap">
+              <lucide-icon name="folder" class="dp-ofmodal__input-icon" size="16"></lucide-icon>
+              <input
+                id="local-folder-input"
+                class="dp-ofmodal__input"
+                [class.dp-ofmodal__input--error]="errorMessage() && !isValidating()"
+                [class.dp-ofmodal__input--success]="validationResult()?.accessible && !isValidating()"
+                type="text"
+                [ngModel]="localPath()"
+                (ngModelChange)="onPathChange($event)"
+                (keydown.enter)="onOpenFolder()"
+                placeholder="D:\Projects\my-existing-app"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              @if (isValidating()) {
+                <span class="dp-ofmodal__spinner dp-spin-fast" title="Validating path...">
+                  <lucide-icon name="loader" size="14"></lucide-icon>
+                </span>
+              }
+            </div>
+            <button
+              type="button"
+              id="ofmodal-browse-btn"
+              class="dp-ofmodal__browse-btn"
+              [class.dp-ofmodal__browse-btn--busy]="isBrowsing()"
+              (click)="onSelectFolder()"
+              [disabled]="isBrowsing() || isOpening()"
+              title="Select directory on your computer"
+            >
+              @if (isBrowsing()) {
+                <lucide-icon name="loader" class="dp-spin-fast" size="15"></lucide-icon>
+                <span>Selecting…</span>
+              } @else {
+                <lucide-icon name="folder-search" size="15"></lucide-icon>
+                <span>Browse…</span>
+              }
+            </button>
+          </div>
+
+          <!-- Error Alert -->
+          @if (errorMessage() && !isValidating()) {
+            <div class="dp-ofmodal__alert dp-ofmodal__alert--error dp-fade-in">
+              <lucide-icon name="triangle-alert" size="14"></lucide-icon>
+              <span>{{ errorMessage() }}</span>
+            </div>
+          }
+
+          <!-- Live Validation Feedback Card -->
+          @if (validationResult()?.accessible && !isValidating()) {
+            <div class="dp-ofmodal__detected-card dp-fade-in">
+              <div class="dp-ofmodal__detected-header">
+                <span class="dp-ofmodal__badge-check">
+                  <lucide-icon name="check" size="13"></lucide-icon> Verified Workspace
+                </span>
+                @if (validationResult()?.detectedTechnology) {
+                  <span class="dp-ofmodal__tech-tag">
+                    {{ validationResult()?.detectedTechnology?.toUpperCase() }}
+                  </span>
+                }
+              </div>
+              <div class="dp-ofmodal__detected-details">
+                <span class="dp-ofmodal__detected-name">{{ validationResult()?.folderName }}</span>
+                <span class="dp-ofmodal__detected-count">
+                  {{ validationResult()?.entriesCount }} items in directory
+                </span>
+              </div>
+              <div class="dp-ofmodal__detected-path" [title]="validationResult()?.resolvedPath || ''">
+                {{ validationResult()?.resolvedPath }}
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Optional Display Name -->
+        <div class="dp-ofmodal__field">
+          <label class="dp-ofmodal__label" for="ofmodal-name">
+            Project Display Name <span class="dp-ofmodal__optional">optional alias</span>
+          </label>
+          <input
+            id="ofmodal-name"
+            class="dp-ofmodal__input"
+            type="text"
+            [ngModel]="displayName()"
+            (ngModelChange)="displayName.set($event)"
+            (keydown.enter)="onOpenFolder()"
+            placeholder="e.g. My Express API"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="dp-ofmodal__hint">
+          <lucide-icon name="info" size="14"></lucide-icon>
+          <span>Files stay in their original location. DevPilot will not copy or move your source code.</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="dp-ofmodal__actions">
+        <button
+          type="button"
+          class="dp-ofmodal__btn dp-ofmodal__btn--cancel"
+          (click)="close()"
+          [disabled]="isOpening()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="ofmodal-submit-btn"
+          class="dp-ofmodal__btn dp-ofmodal__btn--open"
+          (click)="onOpenFolder()"
+          [disabled]="isOpening() || !localPath().trim() || (validationResult() && !validationResult()?.accessible)"
+        >
+          @if (isOpening()) {
+            <lucide-icon name="loader" class="dp-spin-fast" size="16"></lucide-icon>
+            <span>Opening…</span>
+          } @else {
+            <lucide-icon name="folder-open" size="16"></lucide-icon>
+            <span>Open Workspace</span>
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -2,7 +2,7 @@ const errorHandler = (err, req, res, next) => {
   console.error(err);
 
   // Default error message
-  let statusCode = err.statusCode || 500;
+  let statusCode = err.statusCode || err.status || 500;
   let message = err.message || 'Something went wrong.';
   
   // Do not expose stack traces or internal errors in production

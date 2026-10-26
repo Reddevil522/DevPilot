@@ -135,3 +135,88 @@
     width: 100vw;
   }
 }
+
+.devpilot-project__path-badge {
+  font-size: 11px;
+  font-family: var(--dp-font-mono, monospace);
+  color: var(--dp-text-tertiary);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 8px;
+  border-radius: 4px;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Recovery States */
+.devpilot-project__recovery {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.devpilot-project__recovery-card {
+  max-width: 480px;
+  width: 100%;
+  padding: 36px 32px;
+  border-radius: var(--dp-radius-md, 16px);
+  background: var(--dp-surface-strong, rgba(255,255,255,0.06));
+  border: 1px solid var(--dp-surface-border, rgba(255,255,255,0.1));
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.devpilot-project__recovery-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.devpilot-project__recovery-icon--warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.devpilot-project__recovery-icon--error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.devpilot-project__recovery-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dp-text-primary, #fff);
+  margin-bottom: 8px;
+}
+
+.devpilot-project__recovery-desc {
+  font-size: 13px;
+  color: var(--dp-text-secondary, #a3aac2);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.devpilot-project__recovery-path {
+  font-family: var(--dp-font-mono, monospace);
+  font-size: 12px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  color: #fbbf24;
+  margin: 14px 0;
+  word-break: break-all;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.devpilot-project__recovery-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}

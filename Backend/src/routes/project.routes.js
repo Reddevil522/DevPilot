@@ -9,6 +9,9 @@ const {
   updateProject,
   deleteProject,
   selectDirectory,
+  registerExistingFolder,
+  validateWorkspacePath,
+  updateLastOpened,
 } = require('../controllers/project.controller');
 const { requireAuth, requireAuthLight } = require('../middleware/auth.middleware');
 
@@ -21,7 +24,6 @@ router.get('/system/select-directory', requireAuthLight, selectDirectory);
 // All other routes use the full auth middleware (JWT verify + DB user load)
 router.use(requireAuth);
 
-
 router
   .route('/')
   .get(getProjects)
@@ -31,10 +33,20 @@ router
   .route('/stream')
   .post(createProjectStream);
 
+// Register an existing local directory as a project (no generation)
+router.post('/open-folder', registerExistingFolder);
+router.post('/register-folder', registerExistingFolder); // alias for consistency
+
+// Pre-flight validation of local folder path
+router.post('/validate-path', validateWorkspacePath);
+
 router.route('/:id')
   .get(getProject)
   .patch(updateProject)
   .delete(deleteProject);
+
+// Update last opened timestamp explicitly
+router.patch('/:id/last-opened', updateLastOpened);
 
 router.route('/:id/files')
   .get(getProjectFiles);
@@ -43,6 +55,5 @@ router.route('/:id/files')
 // GET /api/projects/:id/files/children?path=src/components
 router.route('/:id/files/children')
   .get(getDirectoryChildren);
-
 
 module.exports = router;
