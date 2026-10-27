@@ -69,6 +69,22 @@ const healthHandler = (req, res) => {
   });
 };
 
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    name: 'DevPilot API',
+    version: '1.0.0',
+    message: 'DevPilot Backend REST & WebSocket Services are online and operational.',
+    health: '/health',
+    endpoints: {
+      auth: '/api/auth',
+      projects: '/api/projects',
+      ai: '/api/ai',
+      terminal: '/api/terminal/ws'
+    }
+  });
+});
+
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
 
