@@ -41,7 +41,7 @@ async function runCompleteTestSuite() {
 
   // TEST 1: Send a message and receive a real AI response
   try {
-    console.log('Running Test 1: Real AI Chat (Live Gemini call)...');
+    console.log('Running Test 1: Real AI Chat (Local Ollama call)...');
     const res = await fetch(`${BASE_URL}/ai/chat`, {
       method: 'POST',
       headers: {
@@ -55,7 +55,7 @@ async function runCompleteTestSuite() {
     const data = await res.json();
     if (res.ok && data.success && data.message && data.message.content) {
       sharedConversationId = data.conversationId;
-      console.log('  [PASS] Live Gemini response received:');
+      console.log('  [PASS] Live Ollama response received:');
       console.log(`         "${data.message.content.slice(0, 100)}..."`);
       results.push({ id: 1, name: 'Test 1: Send Message & Receive Real AI Response', pass: true });
     } else {
@@ -541,31 +541,35 @@ async function runCompleteTestSuite() {
     results.push({ id: 13, name: 'Test 13: Secret Exclusions from AI Context', pass: false });
   }
 
-  // TEST 14: Verify provider quota / error handling
+  // TEST 14: Verify local AI provider error mapping & graceful handling
   try {
     console.log('\nRunning Test 14: Provider Error Mapping & Graceful Handling...');
     const AiService = require('./src/services/ai.service');
 
     let handledGracefully = false;
     try {
-      // Force call with invalid key to test error mapping
-      await AiService.callGemini({
-        apiKey: 'INVALID_TEST_KEY',
-        model: 'gemini-3.8-flash',
-        messages: [{ role: 'user', content: 'test' }]
-      });
+      // Test unreachable endpoint to verify safe error code propagation
+      const savedUrl = process.env.PYTHON_AI_URL;
+      process.env.PYTHON_AI_URL = 'http://127.0.0.1:59999';
+      try {
+        await AiService.callPythonAiService({
+          userMessage: 'test'
+        });
+      } finally {
+        process.env.PYTHON_AI_URL = savedUrl;
+      }
     } catch (e) {
-      if (e.code === 'INVALID_API_KEY' || e.code === 'QUOTA_EXHAUSTED' || e.status === 401 || e.status === 429) {
+      if (e.code === 'AI_SERVICE_UNREACHABLE' || e.code === 'OLLAMA_UNREACHABLE' || e.status === 503) {
         handledGracefully = true;
       }
     }
 
     if (handledGracefully) {
       console.log('  [PASS] Provider errors mapped to safe status codes and user-friendly error objects.');
-      results.push({ id: 14, name: 'Test 14: Provider Error & Quota Handling', pass: true });
+      results.push({ id: 14, name: 'Test 14: Provider Error & Status Handling', pass: true });
     } else {
       console.error('  [FAIL] Provider error not handled as expected');
-      results.push({ id: 14, name: 'Test 14: Provider Error & Quota Handling', pass: false });
+      results.push({ id: 14, name: 'Test 14: Provider Error & Status Handling', pass: false });
     }
   } catch (err) {
     console.error('  [FAIL] Test 14 error:', err.message);

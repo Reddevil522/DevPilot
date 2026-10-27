@@ -109,7 +109,7 @@ class AiFileApplyService {
         // File doesn't exist yet, valid for create
       }
 
-      // Conflict detection for 'edit' operations
+      // Conflict detection for 'edit' and 'create' operations
       if (change.operation === 'edit') {
         const fileExists = await FileSystemService.exists(basePath, relPath);
         if (!fileExists) {
@@ -129,10 +129,20 @@ class AiFileApplyService {
           conflictErr.code = 'STALE_DIFF_CONFLICT';
           throw conflictErr;
         }
+      } else if (change.operation === 'create') {
+        const fileExists = await FileSystemService.exists(basePath, relPath);
+        if (fileExists && !change.originalHash) {
+          const conflictErr = new Error(
+            `Conflict detected: File "${relPath}" already exists on disk. Refusing to overwrite with an unversioned create operation to prevent data loss.`
+          );
+          conflictErr.status = 409;
+          conflictErr.code = 'FILE_ALREADY_EXISTS_CONFLICT';
+          throw conflictErr;
+        }
       }
     }
 
-    // 5. Apply changes safely to disk
+    // 5. Apply changes safely to disk using atomic temp file rename
     const appliedFiles = [];
     const writeErrors = [];
 
@@ -144,16 +154,11 @@ class AiFileApplyService {
         // Ensure parent directory exists
         await fs.mkdir(path.dirname(targetPath), { recursive: true });
 
-        if (change.operation === 'create') {
-          await fs.writeFile(targetPath, change.content, 'utf8');
-          appliedFiles.push(relPath);
-        } else if (change.operation === 'edit') {
-          // Atomic write: write to temp file then rename
-          const tempPath = `${targetPath}.devpilot_tmp_${Date.now()}`;
-          await fs.writeFile(tempPath, change.content, 'utf8');
-          await fs.rename(tempPath, targetPath);
-          appliedFiles.push(relPath);
-        }
+        // Atomic write: write to temporary sibling file then rename atomically
+        const tempPath = `${targetPath}.devpilot_tmp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        await fs.writeFile(tempPath, change.content, 'utf8');
+        await fs.rename(tempPath, targetPath);
+        appliedFiles.push(relPath);
       } catch (writeErr) {
         console.error(`[AiFileApply] Failed writing "${relPath}":`, writeErr);
         writeErrors.push({ path: relPath, error: writeErr.message });

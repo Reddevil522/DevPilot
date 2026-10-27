@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
-import { AuthService } from '../../../core/auth/auth.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 export function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const password = control.get('password');
@@ -95,12 +95,12 @@ export class Register {
     this.successMessage = '';
     
     this.authService.register(this.registerForm.value).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.isLoading = false;
         this.successMessage = res.message || 'Registration successful!';
         this.registerForm.reset();
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isLoading = false;
         if (err.status === 409) {
           this.errorMessage = 'An account with this email may already exist.';

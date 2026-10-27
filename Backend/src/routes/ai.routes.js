@@ -2,11 +2,13 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const {
   chat,
+  chatStream,
   getConversations,
   getConversation,
   clearConversation,
   applyChanges,
-  rejectChanges
+  rejectChanges,
+  generateDocs
 } = require('../controllers/ai.controller');
 const { requireAuth } = require('../middleware/auth.middleware');
 
@@ -29,6 +31,8 @@ const aiChatLimiter = rateLimit({
 router.use(requireAuth);
 
 router.post('/chat', aiChatLimiter, chat);
+router.post('/chat/stream', aiChatLimiter, chatStream);
+router.post('/generate-docs', aiChatLimiter, generateDocs);
 router.get('/conversations', getConversations);
 router.get('/conversations/:id', getConversation);
 router.delete('/conversations/:id', clearConversation);

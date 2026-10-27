@@ -37,3 +37,24 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Python & AI Subsystem
+.venv/
+ai-model/.venv/
+ai-model/.env
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+*.weights
+*.bin
+*.onnx
+
+# Scratch & Temporary Test Artifacts
+scratch/
+Backend/scratch/
+test_workspace_alpha/
+test_workspace_beta/

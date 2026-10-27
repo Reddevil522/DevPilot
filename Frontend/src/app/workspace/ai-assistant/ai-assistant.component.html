@@ -191,7 +191,7 @@
     
     <div class="devpilot-ai__quick-actions" *ngIf="quickActionsExpanded()">
       @for (action of quickActions; track action.label) {
-        <button class="devpilot-ai__action" (click)="sendMessage(action.prompt)" [disabled]="isThinking()">
+        <button class="devpilot-ai__action" (click)="sendMessage(action.prompt, action.operation)" [disabled]="isThinking()">
           <span class="devpilot-ai__action-label">{{ action.label }}</span>
         </button>
       }

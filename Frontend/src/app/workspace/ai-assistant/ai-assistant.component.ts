@@ -52,12 +52,13 @@ export class AiAssistantComponent implements AfterViewChecked {
   readonly expandedDiffs = signal<Record<string, boolean>>({});
 
   readonly quickActions = [
-    { label: 'Explain Code', icon: 'lightbulb', prompt: 'Explain this code' },
-    { label: 'Fix Error', icon: 'wrench', prompt: 'Fix the error in this code' },
-    { label: 'Generate Code', icon: 'zap', prompt: 'Generate code for this feature' },
-    { label: 'Refactor', icon: 'refresh-cw', prompt: 'Refactor this code to be cleaner' },
-    { label: 'Write Tests', icon: 'flask-conical', prompt: 'Write unit tests for this function' },
-    { label: 'Generate Docs', icon: 'file-text', prompt: 'Generate documentation for this code' }
+    { label: 'Explain Code', icon: 'lightbulb', prompt: 'Explain this code', operation: 'explain' },
+    { label: 'Explain Project', icon: 'layers', prompt: 'Explain the project structure and architecture', operation: 'explain' },
+    { label: 'Fix Error', icon: 'wrench', prompt: 'Fix the error in this code', operation: 'fix' },
+    { label: 'Generate Code', icon: 'zap', prompt: 'Generate code for this feature', operation: 'generate' },
+    { label: 'Refactor', icon: 'refresh-cw', prompt: 'Refactor this code to be cleaner', operation: 'review' },
+    { label: 'Write Tests', icon: 'flask-conical', prompt: 'Write unit tests for this function', operation: 'test' },
+    { label: 'Generate Docs', icon: 'file-text', prompt: 'Generate documentation for this code', operation: 'document' }
   ];
 
   readonly quickActionsExpanded = signal(true);
@@ -81,7 +82,7 @@ export class AiAssistantComponent implements AfterViewChecked {
     this.scrollToBottom();
   }
 
-  sendMessage(text?: string): void {
+  sendMessage(text?: string, operation?: string): void {
     const msg = text || this.inputControl.value?.trim();
     if (!msg || this.isThinking()) return;
 
@@ -98,21 +99,74 @@ export class AiAssistantComponent implements AfterViewChecked {
     const textarea = document.getElementById('ai-input') as HTMLTextAreaElement;
     this.resetTextareaHeight(textarea);
 
-    this.aiService.sendMessage(msg, this.context()).subscribe({
-      next: (response) => {
-        this.messages.update((m) => [...m, response]);
+    const assistantMsgId = String(Date.now() + 1);
+    const assistantMsg: AIMessage = {
+      id: assistantMsgId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date()
+    };
+
+    let hasReceivedFirstToken = false;
+
+    this.aiService.sendMessageStream(msg, this.context(), operation).subscribe({
+      next: (event) => {
+        if (event.type === 'chunk' && event.content) {
+          if (!hasReceivedFirstToken) {
+            hasReceivedFirstToken = true;
+            this.messages.update((m) => [...m, assistantMsg]);
+          }
+          this.messages.update((msgs) =>
+            msgs.map((m) =>
+              m.id === assistantMsgId
+                ? { ...m, content: m.content + event.content }
+                : m
+            )
+          );
+        } else if (event.type === 'proposal') {
+          this.messages.update((msgs) =>
+            msgs.map((m) =>
+              m.id === assistantMsgId
+                ? { ...m, proposal: event.proposal }
+                : m
+            )
+          );
+        } else if (event.type === 'completed' && event.message) {
+          if (!hasReceivedFirstToken) {
+            this.messages.update((m) => [...m, event.message!]);
+          } else {
+            this.messages.update((msgs) =>
+              msgs.map((m) =>
+                m.id === assistantMsgId
+                  ? {
+                      ...m,
+                      id: event.message!.id || m.id,
+                      content: event.message!.content || m.content,
+                      proposal: event.message!.proposal || m.proposal
+                    }
+                  : m
+              )
+            );
+          }
+        }
       },
       error: (err) => {
         const errorMsg = err.message || 'AI request failed.';
         const errMessageObj: AIMessage = {
-          id: String(Date.now()),
+          id: assistantMsgId,
           role: 'assistant',
           content: `⚠️ **AI Error**: ${errorMsg}`,
           timestamp: new Date(),
           isError: true,
           errorCode: err.code
         };
-        this.messages.update((m) => [...m, errMessageObj]);
+        if (!hasReceivedFirstToken) {
+          this.messages.update((m) => [...m, errMessageObj]);
+        } else {
+          this.messages.update((msgs) =>
+            msgs.map((m) => (m.id === assistantMsgId ? errMessageObj : m))
+          );
+        }
         this.notifService.show(errorMsg, 'error');
       }
     });
@@ -268,22 +322,18 @@ export class AiAssistantComponent implements AfterViewChecked {
           }
         });
 
-        // Step 6: Refresh affected open Monaco editor tabs
+        // Step 6: Refresh affected open Monaco editor tabs & workspace cache
         for (const change of msg.proposal!.changes) {
           const openTab = this.editorService.tabs().find((t) => t.path === change.path);
           if (openTab) {
             if (openTab.dirty) {
-              this.notifService.show(`File ${change.path} was updated on disk, but has unsaved editor changes.`, 'info');
+              this.notifService.show(`File "${change.path}" was updated on disk, but has unsaved editor changes.`, 'info');
             } else {
-              this.workspaceService.loadFileContent(change.path, true).then(() => {
-                const freshContent = this.workspaceService.fileContents.get(change.path);
-                if (freshContent !== undefined) {
-                  this.editorService.tabs.update((tabs) =>
-                    tabs.map((t) => (t.path === change.path ? { ...t, content: freshContent, dirty: false } : t))
-                  );
-                }
-              });
+              this.workspaceService.fileContents.set(change.path, change.content);
+              this.editorService.handleExternalFileUpdated(change.path, change.content);
             }
+          } else {
+            this.workspaceService.fileContents.set(change.path, change.content);
           }
         }
       },

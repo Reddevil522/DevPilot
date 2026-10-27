@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const FileSystemService = require('./filesystem.service');
 
 // Secret file and directory blacklists
@@ -299,6 +300,95 @@ class AiContextService {
     }
 
     return context;
+  }
+
+  /**
+   * Builds a structured ProjectContextPayload for the Python AI service
+   * and also provides the rendered context string.
+   */
+  static async buildStructuredContext({ project, activeFilePath, selectedCode, userPrompt, errorContext }) {
+    if (!project || !project.localPath) {
+      return {
+        contextData: null,
+        contextString: ''
+      };
+    }
+
+    const basePath = project.localPath;
+    if (!fsSync.existsSync(basePath)) {
+      return {
+        contextData: null,
+        contextString: `[PROJECT WARNING: Project root directory "${basePath}" not found on local disk.]`
+      };
+    }
+
+    const ignoreRules = await this.loadIgnoreRules(basePath);
+    const tree = await this.buildProjectTree(basePath, ignoreRules);
+    const treeStr = this.formatTreeString(tree);
+
+    // Collect list of authorized relative file paths from the tree
+    const authorizedFiles = [];
+    const collectPaths = (items) => {
+      for (const item of items) {
+        if (item.type === 'file') {
+          authorizedFiles.push(item.path);
+        } else if (item.children) {
+          collectPaths(item.children);
+        }
+      }
+    };
+    collectPaths(tree);
+
+    let activeFileItem = null;
+    if (activeFilePath && !this.isSecretPath(activeFilePath)) {
+      const activeContent = await this.safeReadFile(basePath, activeFilePath, 15000);
+      if (activeContent !== null) {
+        const hash = crypto.createHash('sha256').update(activeContent).digest('hex');
+        activeFileItem = {
+          path: activeFilePath.replace(/\\/g, '/').replace(/^\.?\//, ''),
+          content: activeContent,
+          is_active: true,
+          original_hash: hash
+        };
+      }
+    }
+
+    const related = await this.findRelatedFiles(basePath, activeFilePath, userPrompt, errorContext);
+    const relatedItems = [];
+    for (const rel of related) {
+      const hash = crypto.createHash('sha256').update(rel.content).digest('hex');
+      relatedItems.push({
+        path: rel.path.replace(/\\/g, '/').replace(/^\.?\//, ''),
+        content: rel.content,
+        is_active: false,
+        original_hash: hash
+      });
+    }
+
+    const contextData = {
+      project_id: project._id ? project._id.toString() : null,
+      project_name: project.name,
+      technology: project.technology || 'N/A',
+      tree_summary: treeStr,
+      authorized_files: authorizedFiles,
+      active_file: activeFileItem,
+      related_files: relatedItems,
+      selected_code: selectedCode ? selectedCode.trim().slice(0, 5000) : null,
+      error_context: errorContext ? errorContext.trim().slice(0, 5000) : null
+    };
+
+    const contextString = await this.buildContext({
+      project,
+      activeFilePath,
+      selectedCode,
+      userPrompt,
+      errorContext
+    });
+
+    return {
+      contextData,
+      contextString
+    };
   }
 }
 

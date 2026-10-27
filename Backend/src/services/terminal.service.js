@@ -385,7 +385,7 @@ function buildSafeEnv(projectRoot) {
   const secretKeys = [
     'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET',
     'MONGODB_URI', 'SMTP_PASS', 'SMTP_USER',
-    'GEMINI_API_KEY', 'GOOGLE_API_KEY',
+    'INTERNAL_AI_SECRET',
   ];
   for (const key of secretKeys) {
     delete env[key];

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "short_chat",
+    "description": "Short Conversational Query (chat)",
+    "operation": "chat",
+    "stream": {
+      "ttft_ms": 6482.5,
+      "total_ms": 27991.95,
+      "eval_count": 108,
+      "tokens_per_sec": 5.02,
+      "content_length": 478,
+      "model": "qwen2.5-coder:3b"
+    },
+    "non_stream_capped": {
+      "ttft_ms": 15256.52,
+      "total_ms": 15256.52,
+      "eval_count": 68,
+      "tokens_per_sec": 4.46,
+      "content_length": 311
+    }
+  },
+  {
+    "id": "code_explain",
+    "description": "Code Concept Explanation (explain)",
+    "operation": "explain",
+    "stream": {
+      "ttft_ms": 4554.18,
+      "total_ms": 111775.95,
+      "eval_count": 505,
+      "tokens_per_sec": 4.71,
+      "content_length": 2255,
+      "model": "qwen2.5-coder:3b"
+    },
+    "non_stream_capped": {
+      "ttft_ms": 27432.29,
+      "total_ms": 27432.29,
+      "eval_count": 141,
+      "tokens_per_sec": 5.14,
+      "content_length": 679
+    }
+  },
+  {
+    "id": "code_gen",
+    "description": "Code Generation Task (generate)",
+    "operation": "generate",
+    "stream": {
+      "ttft_ms": 5143.69,
+      "total_ms": 88689.3,
+      "eval_count": 397,
+      "tokens_per_sec": 4.75,
+      "content_length": 1619,
+      "model": "qwen2.5-coder:3b"
+    },
+    "non_stream_capped": {
+      "ttft_ms": 82516.49,
+      "total_ms": 82516.49,
+      "eval_count": 356,
+      "tokens_per_sec": 4.31,
+      "content_length": 1507
+    }
+  }
+]

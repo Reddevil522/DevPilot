@@ -24,11 +24,12 @@ export class AiService {
   /**
    * Sends a real chat message to the DevPilot backend AI endpoint.
    */
-  sendMessage(message: string, currentContext: AIContext): Observable<AIMessage> {
+  sendMessage(message: string, currentContext: AIContext, operation?: string): Observable<AIMessage> {
     this.isThinking.set(true);
 
     const payload = {
       message,
+      operation: operation || 'chat',
       projectId: currentContext.projectId || undefined,
       conversationId: this.currentConversationId() || undefined,
       activeFilePath: currentContext.currentFile || undefined,
@@ -79,6 +80,129 @@ export class AiService {
         this.isThinking.set(false);
       })
     );
+  }
+
+  /**
+   * Sends a chat message with end-to-end SSE streaming for sub-second TTFT.
+   */
+  sendMessageStream(
+    message: string,
+    currentContext: AIContext,
+    operation?: string
+  ): Observable<{ type: 'chunk' | 'proposal' | 'completed'; content?: string; proposal?: any; message?: AIMessage }> {
+    this.isThinking.set(true);
+
+    const payload = {
+      message,
+      operation: operation || 'chat',
+      projectId: currentContext.projectId || undefined,
+      conversationId: this.currentConversationId() || undefined,
+      activeFilePath: currentContext.currentFile || undefined,
+      selectedCode: currentContext.selectedCode || undefined,
+      errorContext: currentContext.errorContext || undefined
+    };
+
+    return new Observable((subscriber) => {
+      const controller = new AbortController();
+
+      fetch(`${this.apiUrl}/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            let errorMsg = 'AI request failed.';
+            let code = 'STREAM_ERROR';
+            try {
+              const errJson = await response.json();
+              errorMsg = errJson.message || errorMsg;
+              code = errJson.code || code;
+            } catch {
+              errorMsg = `Server returned HTTP ${response.status}: ${response.statusText}`;
+            }
+            subscriber.error({ message: errorMsg, code, status: response.status });
+            return;
+          }
+
+          if (!response.body) {
+            subscriber.error({ message: 'No response body stream received.', code: 'NO_STREAM' });
+            return;
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let buffer = '';
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const parts = buffer.split('\n\n');
+              buffer = parts.pop() || '';
+
+              for (const part of parts) {
+                const line = part.trim();
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    if (data.type === 'chunk') {
+                      subscriber.next({ type: 'chunk', content: data.content });
+                    } else if (data.type === 'proposal') {
+                      subscriber.next({ type: 'proposal', proposal: data.proposal });
+                    } else if (data.type === 'completed') {
+                      if (data.conversationId) {
+                        this.currentConversationId.set(data.conversationId);
+                      }
+                      const msg: AIMessage = {
+                        id: data.message?.id || String(Date.now()),
+                        role: data.message?.role || 'assistant',
+                        content: data.message?.content || '',
+                        timestamp: data.message?.timestamp ? new Date(data.message.timestamp) : new Date(),
+                        proposal: data.message?.proposal || null
+                      };
+                      subscriber.next({ type: 'completed', message: msg });
+                    } else if (data.type === 'error') {
+                      subscriber.error({ message: data.message || 'Stream error', code: data.code || 'STREAM_ERROR' });
+                      return;
+                    }
+                  } catch {
+                    // Ignore parse error on incomplete chunks
+                  }
+                }
+              }
+            }
+            subscriber.complete();
+          } finally {
+            reader.releaseLock();
+          }
+        })
+        .catch((err) => {
+          if (err.name === 'AbortError') {
+            subscriber.complete();
+            return;
+          }
+          let errorMsg = err.message || 'Network error occurred.';
+          if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+            errorMsg = 'Cannot reach DevPilot backend server (port 5000).';
+          }
+          subscriber.error({ message: errorMsg, code: 'NETWORK_ERROR' });
+        })
+        .finally(() => {
+          this.isThinking.set(false);
+        });
+
+      return () => {
+        controller.abort();
+        this.isThinking.set(false);
+      };
+    });
   }
 
   /**
@@ -175,16 +299,20 @@ export class AiService {
 
   generateDocumentation(projectId: string, type: DocumentationType): Observable<string> {
     this.isThinking.set(true);
-    const docs: Record<DocumentationType, string> = {
-      readme: `# Project Documentation\n\nA modern application built on DevPilot.\n\n## Quick Start\n\`\`\`bash\nnpm install\nnpm run dev\n\`\`\``,
-      api: `# API Reference\n\n## Endpoints\n- GET /api/health - Health check\n- POST /api/auth/login - Authentication`,
-      code: `# Code Architecture\n\nModular design separating routes, controllers, services, and models.`,
-      architecture: `# Architecture Overview\n\nClient (Angular) -> REST API (Node.js/Express) -> Database (MongoDB) + Local Filesystem`,
-      deployment: `# Deployment Guide\n\nConfigured for local development and cloud container execution.`
-    };
 
-    return of(docs[type] || docs['readme']).pipe(
-      delay(1000),
+    return this.http.post<{ success: boolean; data: { content: string; proposal?: any } }>(
+      `${this.apiUrl}/generate-docs`,
+      { projectId, docType: type },
+      { withCredentials: true }
+    ).pipe(
+      map(res => res.data?.content || ''),
+      catchError((error: HttpErrorResponse) => {
+        let errorMsg = 'Failed to generate documentation.';
+        if (error.error?.message) {
+          errorMsg = error.error.message;
+        }
+        return throwError(() => ({ message: errorMsg, status: error.status }));
+      }),
       finalize(() => this.isThinking.set(false))
     );
   }
