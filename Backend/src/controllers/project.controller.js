@@ -1087,6 +1087,15 @@ let activePickerProcess = null;
 // @route   GET /api/projects/system/select-directory
 // @access  Private
 exports.selectDirectory = (req, res) => {
+  // Native desktop GUI folder picker only functions on Windows desktop
+  if (process.platform !== 'win32') {
+    return res.status(200).json({
+      success: false,
+      message: 'Native directory picker is only available on desktop environments. Please enter directory path manually.',
+      path: null
+    });
+  }
+
   const t0 = Date.now();
   const initialPath = req.query.initialPath ? req.query.initialPath.trim() : '';
   console.log(`[PERF][selectDirectory] T0 — request received${initialPath ? ` (initialPath="${initialPath}")` : ''}`);

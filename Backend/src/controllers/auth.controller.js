@@ -1,9 +1,15 @@
 const authService = require('../services/auth.service');
 
+const isProduction = process.env.NODE_ENV === 'production';
+const cookieSameSite = process.env.COOKIE_SAME_SITE || (isProduction ? 'none' : 'lax');
+const cookieSecure = process.env.COOKIE_SECURE !== undefined
+  ? process.env.COOKIE_SECURE === 'true'
+  : (isProduction || cookieSameSite === 'none');
+
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax', // Protects against CSRF but allows local cross-origin
+  secure: cookieSecure,
+  sameSite: cookieSameSite,
 };
 
 const setTokenCookies = (res, accessToken, refreshToken) => {

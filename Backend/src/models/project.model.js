@@ -143,4 +143,4 @@ projectSchema.virtual('isAccessible')
     this._isAccessible = val;
   });
 
-module.exports = mongoose.model('Project', projectSchema);
+module.exports = mongoose.models.Project || mongoose.model('Project', projectSchema);

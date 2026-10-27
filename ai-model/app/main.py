@@ -4,6 +4,7 @@ Initializes FastAPI with lifespan management, structured logging, CORS,
 exception handlers, and API routes.
 """
 
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI
@@ -57,15 +58,24 @@ def create_app() -> FastAPI:
         redoc_url=None,
     )
 
-    # Configure CORS for local DevPilot MEAN stack communication
+    # Configure CORS with dynamic environment origins support
+    allowed_origins = [
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+    ]
+    env_origins = os.getenv("CORS_ORIGINS") or os.getenv("ALLOWED_ORIGINS")
+    if env_origins:
+        allowed_origins.extend([o.strip().rstrip("/") for o in env_origins.split(",") if o.strip()])
+    if os.getenv("FRONTEND_URL"):
+        allowed_origins.append(os.getenv("FRONTEND_URL").strip().rstrip("/"))
+    if os.getenv("BACKEND_URL"):
+        allowed_origins.append(os.getenv("BACKEND_URL").strip().rstrip("/"))
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:4200",
-            "http://127.0.0.1:4200",
-            "http://localhost:5000",
-            "http://127.0.0.1:5000",
-        ],
+        allow_origins=list(set(allowed_origins)),
         allow_credentials=True,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],

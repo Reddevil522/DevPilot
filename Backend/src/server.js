@@ -26,8 +26,8 @@ mongoose
   .then(() => {
     console.log('Successfully connected to MongoDB.');
 
-    httpServer.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+    httpServer.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server is running on port ${PORT} (0.0.0.0)`);
     });
   })
   .catch((err) => {

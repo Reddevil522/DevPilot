@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface FileEvent {
   type: 'CREATE' | 'UPDATE' | 'DELETE' | 'CREATE_FOLDER' | 'DELETE_FOLDER' | 'CONNECTED';
@@ -14,7 +15,7 @@ export interface FileEvent {
 })
 export class FileSystemService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5000/api/projects';
+  private apiUrl = `${environment.apiUrl}/projects`;
 
   readFile(projectId: string, path: string): Observable<string> {
     return this.http.get<{success: boolean, data: string}>(

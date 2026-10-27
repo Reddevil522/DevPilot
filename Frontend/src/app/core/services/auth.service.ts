@@ -2,6 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, tap, map, finalize } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface LoginPayload {
   email: string;
@@ -35,8 +36,7 @@ export interface AuthResult {
 export class AuthService {
   private http = inject(HttpClient);
   
-  // Hardcoded to match the Node.js backend port for now
-  private apiUrl = 'http://localhost:5000/api/auth'; 
+  private apiUrl = `${environment.apiUrl}/auth`;
 
   readonly isSubmitting = signal(false);
   readonly currentUser = signal<User | null>(null);
@@ -111,7 +111,7 @@ export class AuthService {
   private handleError = (error: HttpErrorResponse): Observable<never> => {
     let errorMessage = 'An unknown error occurred.';
     if (error.status === 0) {
-      errorMessage = 'Backend server is unreachable. Please ensure it is running on port 5000.';
+      errorMessage = 'Backend server is unreachable. Please verify network connectivity and backend status.';
     } else if (error.error && error.error.errors && error.error.errors.length > 0) {
       errorMessage = error.error.errors[0].message;
     } else if (error.error && error.error.message) {

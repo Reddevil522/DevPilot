@@ -6,7 +6,7 @@ Environment variables can be provided in an .env file or the OS environment.
 
 from functools import lru_cache
 from typing import Literal
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,12 +16,12 @@ class Settings(BaseSettings):
     # --- HTTP Server Settings ---
     ai_host: str = Field(
         default="127.0.0.1",
-        validation_alias="AI_HOST",
+        validation_alias=AliasChoices("HOST", "AI_HOST"),
         description="Host interface for the DevPilot AI FastAPI service."
     )
     ai_port: int = Field(
         default=8001,
-        validation_alias="AI_PORT",
+        validation_alias=AliasChoices("PORT", "AI_PORT"),
         description="Port for the DevPilot AI service."
     )
     debug: bool = Field(

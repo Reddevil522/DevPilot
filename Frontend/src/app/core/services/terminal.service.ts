@@ -1,4 +1,5 @@
 import { Injectable, signal, OnDestroy } from '@angular/core';
+import { environment } from '../../../environments/environment';
 
 export type TerminalStatus = 'disconnected' | 'connecting' | 'connected' | 'error' | 'exited';
 
@@ -71,6 +72,9 @@ export class TerminalService implements OnDestroy {
    * Determine the WebSocket URL for the terminal endpoint.
    */
   private getWsUrl(): string {
+    if (environment.wsUrl) {
+      return environment.wsUrl;
+    }
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const hostname = window.location.hostname || 'localhost';
     // When running in Angular dev server (port 4200), default backend is on port 5000.
@@ -208,7 +212,7 @@ export class TerminalService implements OnDestroy {
         state.pingTimer = null;
         if (session.status === 'connecting') {
           session.status = 'error';
-          session.error = 'Unable to connect to terminal backend on port 5000. Is the backend running?';
+          session.error = 'Unable to connect to terminal backend. Please verify network connectivity and backend status.';
           this.syncSessions();
         }
       };

@@ -12,6 +12,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0 <=22.x"
+  },
   "dependencies": {
     "argon2": "^0.45.1",
     "chokidar": "^5.0.0",

@@ -8,7 +8,7 @@ import {
   ValidatePathResult,
   FileNode,
 } from '../../shared/models/project.model';
-
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectService {
@@ -18,7 +18,7 @@ export class ProjectService {
   readonly isLoading = signal(false);
   readonly isCreating = signal(false);
 
-  private apiUrl = 'http://localhost:5000/api/projects';
+  private apiUrl = `${environment.apiUrl}/projects`;
 
   getProjects(): Observable<Project[]> {
     this.isLoading.set(true);

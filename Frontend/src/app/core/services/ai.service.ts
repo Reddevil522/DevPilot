@@ -3,11 +3,12 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, of } from 'rxjs';
 import { map, catchError, finalize, delay } from 'rxjs/operators';
 import { AIMessage, AIContext, DocumentationType } from '../../shared/models/ai.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AiService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5000/api/ai';
+  private apiUrl = `${environment.apiUrl}/ai`;
 
   readonly isThinking = signal(false);
   readonly isPanelOpen = signal(false);
@@ -61,7 +62,7 @@ export class AiService {
         let code = 'UNKNOWN_ERROR';
 
         if (error.status === 0) {
-          errorMsg = 'Cannot reach DevPilot backend server (port 5000).';
+          errorMsg = 'Cannot reach DevPilot backend server. Please verify network connectivity and backend status.';
           code = 'BACKEND_UNREACHABLE';
         } else if (error.error?.message) {
           errorMsg = error.error.message;
@@ -190,7 +191,7 @@ export class AiService {
           }
           let errorMsg = err.message || 'Network error occurred.';
           if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
-            errorMsg = 'Cannot reach DevPilot backend server (port 5000).';
+            errorMsg = 'Cannot reach DevPilot backend server. Please verify network connectivity and backend status.';
           }
           subscriber.error({ message: errorMsg, code: 'NETWORK_ERROR' });
         })

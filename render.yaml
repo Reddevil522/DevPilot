@@ -1,0 +1,136 @@
+# ==============================================================================
+# DevPilot - Render Blueprint Specification
+# ==============================================================================
+# Deploy the complete DevPilot stack using Render Blueprints.
+# In the Render Dashboard: "New +" -> "Blueprint" -> Connect your DevPilot repo.
+#
+# Services defined:
+#   1. devpilot-frontend (Static Site - Angular SPA)
+#   2. devpilot-backend  (Node.js Web Service - Express + WebSockets + MongoDB)
+#   3. devpilot-ai       (Python Web Service - FastAPI + Ollama Adapter)
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. DevPilot Angular Frontend (Static Site)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: devpilot-frontend
+    runtime: static
+    rootDir: Frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist/devpilot/browser
+    pullRequestPreviewsEnabled: false
+    routes:
+      # Single-Page Application (SPA) routing rewrite:
+      # Sends all non-file route requests to index.html so Angular router can handle them
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+
+  # ----------------------------------------------------------------------------
+  # 2. DevPilot Node.js Backend (Web Service)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: devpilot-backend
+    runtime: node
+    rootDir: Backend
+    plan: starter # Starter plan recommended for persistent WebSockets and node-pty PTY processes
+    buildCommand: npm install
+    startCommand: node src/server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false # Enter your MongoDB Atlas connection string in Render Dashboard
+      - key: FRONTEND_URL
+        fromService:
+          name: devpilot-frontend
+          type: web
+          property: host
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://devpilot-frontend.onrender.com,http://localhost:4200
+      - key: COOKIE_SAME_SITE
+        value: none
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: PYTHON_AI_URL
+        fromService:
+          name: devpilot-ai
+          type: web
+          property: host
+      - key: AI_PROVIDER
+        value: python
+      - key: AI_TIMEOUT_SECONDS
+        value: "120"
+      - key: OLLAMA_MODEL
+        value: qwen2.5-coder:3b
+      - key: OLLAMA_TIMEOUT_SECONDS
+        value: "120"
+      # Optional disk mount for persistent project workspace files
+      # disk:
+      #   name: devpilot-projects-disk
+      #   mountPath: /var/data/devpilot/projects
+      #   sizeGB: 10
+
+  # ----------------------------------------------------------------------------
+  # 3. DevPilot Python AI Service (FastAPI)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: devpilot-ai
+    runtime: python
+    rootDir: ai-model
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: AI_HOST
+        value: 0.0.0.0
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: OLLAMA_MODEL
+        value: qwen2.5-coder:3b
+      - key: OLLAMA_TIMEOUT_SECONDS
+        value: "120"
+      - key: OLLAMA_KEEP_ALIVE
+        value: 10m
+      - key: MAX_CONTEXT_TOKENS
+        value: "8192"
+      - key: MAX_OUTPUT_TOKENS
+        value: "4096"
+      - key: DEFAULT_NUM_CTX
+        value: "2048"
+      - key: MAX_CONCURRENT_INFERENCES
+        value: "1"
+      - key: TEMPERATURE
+        value: "0.2"
+      # OLLAMA_BASE_URL must point to your remote inference server (NOT localhost on cloud)
+      # e.g. https://your-remote-gpu-server.com or a secure tunnel
+      - key: OLLAMA_BASE_URL
+        sync: false

@@ -104,4 +104,4 @@ conversationSchema.virtual('id').get(function () {
   return this._id.toHexString();
 });
 
-module.exports = mongoose.model('Conversation', conversationSchema);
+module.exports = mongoose.models.Conversation || mongoose.model('Conversation', conversationSchema);

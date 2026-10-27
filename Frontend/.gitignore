@@ -40,3 +40,9 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Local environment configs & runtime overrides
+.env
+.env.*
+public/assets/config.js
+

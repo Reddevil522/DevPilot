@@ -33,6 +33,6 @@ const verificationTokenSchema = new mongoose.Schema(
 // Index to automatically remove expired tokens (TTL index)
 verificationTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-const VerificationToken = mongoose.model('VerificationToken', verificationTokenSchema);
+const VerificationToken = mongoose.models.VerificationToken || mongoose.model('VerificationToken', verificationTokenSchema);
 
 module.exports = VerificationToken;
