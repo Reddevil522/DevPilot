@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "angular",
-  "buildCommand": "cd Frontend && npm install && npm run build",
+  "installCommand": "cd Frontend && npm install --legacy-peer-deps",
+  "buildCommand": "cd Frontend && npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "Frontend/dist/devpilot/browser",
   "cleanUrls": true,
   "rewrites": [
