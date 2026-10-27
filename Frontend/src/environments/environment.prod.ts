@@ -32,8 +32,7 @@ declare global {
  * - Prevents duplicate '/api' path segments.
  */
 function normalizeApiUrl(rawUrl?: string): string {
-  // Replace with your actual Render backend URL or inject at runtime via window.__DEVPILOT_CONFIG__.apiUrl
-  const fallback = 'https://devpilot-backend.onrender.com/api';
+  const fallback = 'https://devpilot-1i05.onrender.com/api';
   if (!rawUrl || typeof rawUrl !== 'string') {
     return fallback;
   }
@@ -51,9 +50,10 @@ function normalizeApiUrl(rawUrl?: string): string {
  * - Ensures terminal WebSocket endpoint path '/api/terminal/ws'.
  */
 function normalizeWsUrl(rawWsUrl?: string, normalizedApiUrl?: string): string {
-  const fallback = 'wss://devpilot-backend.onrender.com/api/terminal/ws';
+  const fallback = 'wss://devpilot-1i05.onrender.com/api/terminal/ws';
   if (rawWsUrl && typeof rawWsUrl === 'string' && rawWsUrl.trim()) {
-    const trimmed = rawWsUrl.trim().replace(/\/+$/, '');
+    let trimmed = rawWsUrl.trim().replace(/\/+$/, '');
+    trimmed = trimmed.replace(/^ws:https:\/\//i, 'wss://').replace(/^ws:http:\/\//i, 'ws://');
     let wsTarget = trimmed.replace(/^http:\/\//i, 'ws://').replace(/^https:\/\//i, 'wss://');
     if (!wsTarget.startsWith('ws://') && !wsTarget.startsWith('wss://')) {
       wsTarget = `wss://${wsTarget.replace(/^\/+/, '')}`;
@@ -80,12 +80,15 @@ function normalizeWsUrl(rawWsUrl?: string, normalizedApiUrl?: string): string {
   return fallback;
 }
 
-const runtimeConfig = (typeof window !== 'undefined' && window.__DEVPILOT_CONFIG__) || {};
-const resolvedApiUrl = normalizeApiUrl(runtimeConfig.apiUrl);
-const resolvedWsUrl = normalizeWsUrl(runtimeConfig.wsUrl, resolvedApiUrl);
-
 export const environment = {
   production: true,
-  apiUrl: resolvedApiUrl,
-  wsUrl: resolvedWsUrl,
+  get apiUrl(): string {
+    const runtimeConfig = (typeof window !== 'undefined' && window.__DEVPILOT_CONFIG__) || {};
+    return normalizeApiUrl(runtimeConfig.apiUrl);
+  },
+  get wsUrl(): string {
+    const runtimeConfig = (typeof window !== 'undefined' && window.__DEVPILOT_CONFIG__) || {};
+    return normalizeWsUrl(runtimeConfig.wsUrl, this.apiUrl);
+  },
 };
+

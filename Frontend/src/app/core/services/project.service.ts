@@ -168,6 +168,31 @@ export class ProjectService {
   }
 
   /**
+   * Determine whether the active API URL is pointing to a local instance
+   * (e.g. localhost, 127.0.0.1, or ::1).
+   */
+  isLocalBackend(): boolean {
+    try {
+      const url = new URL(this.apiUrl);
+      const host = url.hostname.toLowerCase();
+      return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    } catch {
+      return this.apiUrl.includes('localhost') || this.apiUrl.includes('127.0.0.1');
+    }
+  }
+
+  /**
+   * Get the current API hostname for status display.
+   */
+  getApiHost(): string {
+    try {
+      return new URL(this.apiUrl).host;
+    } catch {
+      return this.apiUrl;
+    }
+  }
+
+  /**
    * Register an existing local filesystem folder as a DevPilot workspace project.
    */
   openExistingFolder(payload: OpenFolderPayload): Observable<Project> {
@@ -177,7 +202,13 @@ export class ProjectService {
       payload,
       { withCredentials: true }
     ).pipe(
-      map(response => response.data),
+      map(response => {
+        const p = response.data;
+        if (p && !p.id && (p as any)._id) {
+          p.id = (p as any)._id.toString();
+        }
+        return p;
+      }),
       tap(project => {
         this.isCreating.set(false);
         this.activeProject.set(project);
@@ -193,9 +224,10 @@ export class ProjectService {
    * Pre-flight validation of local folder existence and accessibility.
    */
   validateWorkspacePath(localPath: string): Observable<ValidatePathResult> {
+    const cleaned = (localPath || '').trim().replace(/^["']|["']$/g, '').trim();
     return this.http.post<ValidatePathResult>(
       `${this.apiUrl}/validate-path`,
-      { localPath },
+      { localPath: cleaned },
       { withCredentials: true }
     ).pipe(
       catchError(err => of({
@@ -242,7 +274,6 @@ export class ProjectService {
    * Open the native OS folder picker.
    * Returns { success: true, path: string } on selection,
    * or { success: true, path: null } when the user cancels.
-   * Errors only on actual failures (dialog could not open).
    */
   selectDirectory(initialPath?: string): Observable<{success: boolean, path?: string | null}> {
     const url = initialPath
@@ -262,26 +293,90 @@ export class ProjectService {
   }
 
   /**
-   * Clean, deterministic native folder picker.
-   * Resolves with the selected absolute directory path,
+   * Multi-runtime directory selector supporting:
+   * 1. Electron Desktop IPC Bridge (window.electronAPI)
+   * 2. Local Node.js backend on Windows (/api/projects/system/select-directory)
+   * 3. Browser window.showDirectoryPicker() fallback
+   * 4. Clear error guidance when connected to a remote cloud backend
+   *
+   * Resolves with the selected absolute directory path string,
    * or null if the user cancelled or closed the picker.
-   * Never hangs or rejects.
+   * Rejects only if the picker cannot be opened due to environmental constraints.
    */
   async selectFolder(initialPath?: string): Promise<string | null> {
-    try {
-      const url = initialPath
-        ? `${this.apiUrl}/system/select-directory?initialPath=${encodeURIComponent(initialPath)}`
-        : `${this.apiUrl}/system/select-directory`;
-      const res = await firstValueFrom(
-        this.http.get<{ success: boolean; path?: string | null }>(url, { withCredentials: true })
-      );
-      if (res && res.success && res.path) {
-        return res.path;
+    const cleanInitial = (initialPath || '').replace(/^["']|["']$/g, '').trim();
+
+    // 1. Electron Desktop Environment Bridge
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.selectFolder) {
+      try {
+        const res = await (window as any).electronAPI.selectFolder(cleanInitial);
+        if (res?.canceled || res?.cancelled) {
+          return null;
+        }
+        if (res?.path) {
+          return res.path;
+        }
+        if (res?.error) {
+          throw new Error(res.error);
+        }
+      } catch (electronErr: any) {
+        console.warn('[ProjectService] Electron selectFolder error, falling back:', electronErr);
       }
-      return null;
-    } catch (err) {
-      console.error('[ProjectService] Error selecting folder:', err);
-      return null;
     }
+
+    // 2. Local Backend Service on Windows
+    if (this.isLocalBackend()) {
+      try {
+        const url = cleanInitial
+          ? `${this.apiUrl}/system/select-directory?initialPath=${encodeURIComponent(cleanInitial)}`
+          : `${this.apiUrl}/system/select-directory`;
+        const res = await firstValueFrom(
+          this.http.get<{ success: boolean; path?: string | null; folderName?: string; message?: string; cancelled?: boolean }>(
+            url,
+            { withCredentials: true }
+          )
+        );
+        if (res && res.success) {
+          if (!res.path || res.cancelled) {
+            return null; // clean cancellation
+          }
+          return res.path;
+        }
+        if (res && !res.success && res.message) {
+          throw new Error(res.message);
+        }
+      } catch (err: any) {
+        if (err.message && !err.message.includes('Http failure')) {
+          throw err;
+        }
+        console.warn('[ProjectService] Backend select-directory unreachable, trying browser fallback:', err);
+      }
+    }
+
+    // 3. Fallback: Modern Browser Directory Picker (W3C File System Access API)
+    if (typeof window !== 'undefined' && typeof (window as any).showDirectoryPicker === 'function') {
+      try {
+        const dirHandle = await (window as any).showDirectoryPicker({ mode: 'read' });
+        if (dirHandle && dirHandle.name) {
+          // In browser sandbox, absolute path is not exposed by W3C API for security.
+          // Return the constructed path or folder name.
+          return cleanInitial ? `${cleanInitial.replace(/[/\\]+$/, '')}\\${dirHandle.name}` : dirHandle.name;
+        }
+      } catch (pickerErr: any) {
+        if (pickerErr.name === 'AbortError') {
+          return null; // user cancelled browser picker
+        }
+        console.warn('[ProjectService] showDirectoryPicker error:', pickerErr);
+      }
+    }
+
+    // 4. Remote Cloud Backend Warning
+    if (!this.isLocalBackend()) {
+      throw new Error(
+        `Connected to remote backend (${this.getApiHost()}). Browsing client Windows drives requires DevPilot running locally (http://localhost:5000). You can enter the path manually if that folder exists on the server.`
+      );
+    }
+
+    return null;
   }
 }

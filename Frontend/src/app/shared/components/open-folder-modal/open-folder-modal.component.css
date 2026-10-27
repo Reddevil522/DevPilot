@@ -329,3 +329,32 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Remote Cloud Backend Warning Banner */
+.dp-ofmodal__remote-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--dp-radius-sm);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #f59e0b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.dp-ofmodal__remote-banner lucide-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #f59e0b;
+}
+
+.dp-ofmodal__remote-banner-content code {
+  font-family: var(--dp-font-mono);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #fcd34d;
+}

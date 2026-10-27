@@ -29,9 +29,31 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-// Sensible defaults
-apiUrl = apiUrl || 'http://localhost:5000/api';
-wsUrl = wsUrl || 'ws://localhost:5000/api/terminal/ws';
+// Normalize URLs
+apiUrl = (apiUrl || 'http://localhost:5000/api').trim().replace(/\/+$/, '');
+if (!apiUrl.endsWith('/api')) {
+  apiUrl = `${apiUrl}/api`;
+}
+
+if (!wsUrl || typeof wsUrl !== 'string' || !wsUrl.trim()) {
+  const wsScheme = apiUrl.startsWith('https') ? 'wss://' : 'ws://';
+  const host = apiUrl.replace(/^https?:\/\//i, '').replace(/\/api$/, '');
+  wsUrl = `${wsScheme}${host}/api/terminal/ws`;
+} else {
+  let trimmedWs = wsUrl.trim().replace(/\/+$/, '');
+  trimmedWs = trimmedWs.replace(/^ws:https:\/\//i, 'wss://').replace(/^ws:http:\/\//i, 'ws://');
+  let wsTarget = trimmedWs.replace(/^http:\/\//i, 'ws://').replace(/^https:\/\//i, 'wss://');
+  if (!wsTarget.startsWith('ws://') && !wsTarget.startsWith('wss://')) {
+    wsTarget = apiUrl.startsWith('https') ? `wss://${wsTarget.replace(/^\/+/, '')}` : `ws://${wsTarget.replace(/^\/+/, '')}`;
+  }
+  if (wsTarget.endsWith('/api/terminal/ws')) {
+    wsUrl = wsTarget;
+  } else if (wsTarget.endsWith('/api')) {
+    wsUrl = `${wsTarget}/terminal/ws`;
+  } else {
+    wsUrl = `${wsTarget}/api/terminal/ws`;
+  }
+}
 
 const targetContent = `/**
  * DevPilot Active Runtime Configuration
@@ -47,3 +69,10 @@ window.__DEVPILOT_CONFIG__ = {
 fs.mkdirSync(path.dirname(targetPath), { recursive: true });
 fs.writeFileSync(targetPath, targetContent, 'utf8');
 console.log(`[DevPilot] Synchronized .env -> public/assets/config.js (apiUrl: ${apiUrl}, wsUrl: ${wsUrl})`);
+
+// Also update dist output if present
+const distTargetPath = path.join(__dirname, '..', 'dist', 'devpilot', 'browser', 'assets', 'config.js');
+if (fs.existsSync(path.dirname(distTargetPath))) {
+  fs.writeFileSync(distTargetPath, targetContent, 'utf8');
+  console.log(`[DevPilot] Synchronized .env -> dist/devpilot/browser/assets/config.js`);
+}

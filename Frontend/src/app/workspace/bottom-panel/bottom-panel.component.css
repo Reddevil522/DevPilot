@@ -15,80 +15,122 @@
   overflow: hidden;
 }
 
+/* ==========================================================================
+   Panel Header / Integrated Toolbar (3-Zone Flex Layout)
+   ========================================================================== */
 .devpilot-panel__header {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
   background: #080b14;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   flex-shrink: 0;
-  min-height: 30px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px 0 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  min-width: 0;
+  width: 100%;
+}
+
+/* Zone 1: Navigation Tabs (Terminal, Problems, Output, Debug) */
+.devpilot-panel__nav-section {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex-shrink: 0;
 }
 
 .devpilot-panel__tabs {
   display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .devpilot-panel__tab {
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 12px;
   font-size: 11.5px;
   font-weight: 500;
   background: none;
   border: none;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255, 255, 255, 0.45);
   cursor: pointer;
   text-transform: capitalize;
   border-bottom: 2px solid transparent;
   transition: all var(--dp-transition-fast);
+  white-space: nowrap;
 }
-.devpilot-panel__tab:hover { color: rgba(255,255,255,0.7); }
+.devpilot-panel__tab:hover { color: rgba(255, 255, 255, 0.75); }
 .devpilot-panel__tab--active {
-  color: rgba(255,255,255,0.9);
+  color: rgba(255, 255, 255, 0.95);
   border-bottom-color: var(--dp-accent);
 }
 
-.devpilot-panel__header-actions {
+/* Zone 2: Center Section - Terminal Sessions (PowerShell 1, PowerShell 2) */
+.devpilot-panel__sessions-section {
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 100%;
+  padding: 0 8px;
+  scrollbar-width: none;
+}
+.devpilot-panel__sessions-section::-webkit-scrollbar {
+  display: none;
 }
 
-/* Terminal session controls */
 .devpilot-panel__session-tabs {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  min-width: 0;
+  flex-shrink: 0;
 }
 
+/* Visually distinct, non-overflowing session tab pill */
 .devpilot-panel__session-tab {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
+  gap: 5px;
+  height: 22px;
+  padding: 0 4px 0 8px;
   font-size: 11px;
   font-family: var(--dp-font-mono);
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 4px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   transition: all var(--dp-transition-fast);
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-sizing: border-box;
+  user-select: none;
 }
 
 .devpilot-panel__session-tab:hover {
   background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .devpilot-panel__session-tab--active {
-  background: rgba(99, 102, 241, 0.15);
-  border-color: rgba(99, 102, 241, 0.35);
+  background: rgba(99, 102, 241, 0.16);
+  border-color: rgba(99, 102, 241, 0.42);
   color: #f2f3f9;
 }
 
 .devpilot-panel__session-title {
-  max-width: 120px;
+  max-width: 85px;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -125,14 +167,24 @@
   100% { opacity: 1; }
 }
 
+/* Close button - neatly nested inside the tab, never overflowing border */
 .devpilot-panel__session-close {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 2px;
-  padding: 1px;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  min-height: 14px;
+  border-radius: 3px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-left: 2px;
   color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
   transition: all var(--dp-transition-fast);
+  flex-shrink: 0;
 }
 
 .devpilot-panel__session-close:hover {
@@ -140,33 +192,162 @@
   color: #f87171;
 }
 
-.devpilot-panel__icon-btn {
+/* Zone 3: Right Section - Action Group & Current Project Path */
+.devpilot-panel__right-section {
   display: flex;
   align-items: center;
+  gap: 6px;
+  height: 100%;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+/* Dedicated Action Buttons Group (+, Trash, Refresh) */
+.devpilot-panel__action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.devpilot-panel__icon-btn {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border: none;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
   background: transparent;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.5);
   border-radius: 4px;
   cursor: pointer;
   transition: all var(--dp-transition-fast);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.devpilot-panel__icon-btn lucide-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  line-height: 1;
 }
 
 .devpilot-panel__icon-btn:hover {
   background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.95);
 }
 
+.devpilot-panel__icon-btn:active {
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(0.96);
+}
+
+.devpilot-panel__icon-btn:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.6);
+  outline-offset: 1px;
+}
+
+/* Subtle separator dividing toolbar actions from project path */
+.devpilot-panel__separator {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 3px;
+  flex-shrink: 0;
+}
+
+/* Folder path / Working directory button badge */
 .devpilot-panel__cwd {
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 7px;
+  font-size: 11px;
   font-family: var(--dp-font-mono);
-  color: rgba(255,255,255,0.3);
-  max-width: 250px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  max-width: 190px;
+  min-width: 0;
+  flex-shrink: 1;
+  transition: all var(--dp-transition-fast);
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.devpilot-panel__cwd:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.devpilot-panel__cwd:active {
+  transform: scale(0.98);
+}
+
+.devpilot-panel__cwd:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.6);
+  outline-offset: 1px;
+}
+
+.devpilot-panel__cwd-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(99, 102, 241, 0.7);
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+}
+
+.devpilot-panel__cwd:hover .devpilot-panel__cwd-icon {
+  color: #818cf8;
+}
+
+.devpilot-panel__cwd-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 860px) {
+  .devpilot-panel__cwd {
+    max-width: 140px;
+  }
+}
+
+@media (max-width: 680px) {
+  .devpilot-panel__session-title {
+    max-width: 60px;
+  }
+  .devpilot-panel__cwd {
+    max-width: 100px;
+  }
+}
+
+@media (max-width: 500px) {
+  .devpilot-panel__cwd-text {
+    display: none;
+  }
+  .devpilot-panel__cwd {
+    padding: 0 5px;
+  }
+  .devpilot-panel__tab {
+    padding: 0 8px;
+    font-size: 11px;
+  }
 }
 
 /* Terminal wrapper & mount host */
@@ -176,7 +357,7 @@
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
-  height: calc(100% - 30px);
+  height: calc(100% - 32px);
   position: relative;
   background: #0a0d18;
 }
@@ -215,34 +396,64 @@
 /* Banners (Connecting, Error, Exited) */
 .devpilot-panel__banner {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 8px;
-  padding: 4px 12px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0 12px;
   font-size: 11px;
   font-family: var(--dp-font-mono);
   flex-shrink: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.devpilot-panel__banner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  flex-shrink: 0;
+}
+
+.devpilot-panel__banner-icon lucide-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  transform-origin: center center;
 }
 
 .devpilot-panel__banner--connecting {
-  background: rgba(251, 191, 36, 0.1);
-  border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+  background: rgba(251, 191, 36, 0.08);
+  border-bottom: 1px solid rgba(251, 191, 36, 0.18);
   color: #fbbf24;
 }
 
 .devpilot-panel__banner--error {
-  background: rgba(248, 113, 113, 0.12);
-  border-bottom: 1px solid rgba(248, 113, 113, 0.25);
+  background: rgba(248, 113, 113, 0.08);
+  border-bottom: 1px solid rgba(248, 113, 113, 0.18);
   color: #f87171;
 }
 
 .devpilot-panel__banner--info {
-  background: rgba(99, 102, 241, 0.1);
-  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.08);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.18);
   color: #a5b4fc;
 }
 
 .devpilot-panel__banner-text {
   flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: 0.1px;
 }
 
 .devpilot-panel__btn-action {

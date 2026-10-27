@@ -14,6 +14,16 @@
       </div>
 
       <div class="dp-ofmodal__body">
+        <!-- Remote Backend Notice (if connected to remote cloud server) -->
+        @if (!isLocalBackend()) {
+          <div class="dp-ofmodal__remote-banner dp-fade-in">
+            <lucide-icon name="cloud" size="16"></lucide-icon>
+            <div class="dp-ofmodal__remote-banner-content">
+              <strong>Remote Cloud Backend:</strong> Currently connected to <code>{{ apiHost() }}</code>. Opening local Windows directories requires DevPilot running locally on your computer (<code>http://localhost:5000</code>).
+            </div>
+          </div>
+        }
+
         <!-- Folder Path Picker Field -->
         <div class="dp-ofmodal__field">
           <label class="dp-ofmodal__label" for="local-folder-input">
@@ -132,7 +142,7 @@
           id="ofmodal-submit-btn"
           class="dp-ofmodal__btn dp-ofmodal__btn--open"
           (click)="onOpenFolder()"
-          [disabled]="isOpening() || !localPath().trim() || (validationResult() && !validationResult()?.accessible)"
+          [disabled]="isOpening() || !localPath().trim() || (validationResult() !== null && !validationResult()?.accessible)"
         >
           @if (isOpening()) {
             <lucide-icon name="loader" class="dp-spin-fast" size="16"></lucide-icon>

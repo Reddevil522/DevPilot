@@ -8,6 +8,7 @@ import { AiService } from '../../core/services/ai.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SharedIconsModule } from '../../shared/shared-icons.module';
 
+import { WorkspaceService } from '../../core/services/workspace.service';
 import { OpenFolderModalComponent } from '../../shared/components/open-folder-modal/open-folder-modal.component';
 
 interface AppNotification {
@@ -39,6 +40,7 @@ export class TopNavbarComponent {
   private themeService = inject(ThemeService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private workspaceService = inject(WorkspaceService);
 
   readonly projectService = inject(ProjectService);
   readonly notifService = inject(NotificationService);
@@ -62,7 +64,17 @@ export class TopNavbarComponent {
 
   onFolderOpened(project: any): void {
     this.openFolderModalOpen.set(false);
-    this.router.navigate(['/projects', project.id]);
+    const targetId = project?.id || project?._id || project?.projectId;
+    if (!targetId) return;
+
+    const currentId = this.workspaceService.activeProject()?.id || (this.workspaceService.activeProject() as any)?._id;
+    if (currentId === targetId) {
+      this.workspaceService.openProject(project);
+      this.workspaceService.refreshTree();
+      this.notifService.show(`Workspace "${project.displayName || project.name}" refreshed.`, 'info');
+    } else {
+      this.router.navigate(['/projects', targetId]);
+    }
   }
 
   toggleTheme(): void { this.themeService.toggle(); }

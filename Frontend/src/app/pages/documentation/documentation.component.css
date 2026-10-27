@@ -1,7 +1,24 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
 .devpilot-docs {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 32px 40px;
+  box-sizing: border-box;
 }
 
 .devpilot-docs__header {
@@ -43,6 +60,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
+  padding-bottom: 32px;
 }
 
 .devpilot-docs__card {

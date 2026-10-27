@@ -1,7 +1,22 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
 .devpilot-deploys {
   flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 32px 40px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 28px;

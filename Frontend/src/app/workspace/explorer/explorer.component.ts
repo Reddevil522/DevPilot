@@ -55,7 +55,17 @@ export class ExplorerComponent implements OnInit, OnDestroy {
 
   onFolderOpened(project: any): void {
     this.openFolderModalOpen.set(false);
-    this.router.navigate(['/projects', project.id]);
+    const targetId = project?.id || project?._id || project?.projectId;
+    if (!targetId) return;
+
+    const currentId = this.activeProject()?.id || (this.activeProject() as any)?._id;
+    if (currentId === targetId) {
+      this.workspaceService.openProject(project);
+      this.workspaceService.refreshTree();
+      this.notificationService.show(`Workspace "${project.displayName || project.name}" refreshed.`, 'info');
+    } else {
+      this.router.navigate(['/projects', targetId]);
+    }
   }
 
   private modalSub?: Subscription;

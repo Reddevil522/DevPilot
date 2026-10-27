@@ -268,10 +268,13 @@ export class DashboardComponent implements OnInit {
   }
 
   onProjectCreated(project: Project): void {
+    const targetId = project?.id || (project as any)?._id || (project as any)?.projectId;
     this.projects.update(projs => this.deduplicateProjects([project, ...projs]));
-    this.router.navigate(['/projects', project.id]);
     this.createModalOpen.set(false);
     this.openFolderModalOpen.set(false);
+    if (targetId) {
+      this.router.navigate(['/projects', targetId]);
+    }
   }
 
   deleteProject(project: Project, event: Event): void {

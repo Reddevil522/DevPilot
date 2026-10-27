@@ -438,7 +438,12 @@ exports.registerExistingFolder = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Local path is required' });
     }
 
-    const resolvedPath = path.resolve(localPath.trim());
+    localPath = localPath.trim().replace(/^["']|["']$/g, '').trim();
+    if (!localPath) {
+      return res.status(400).json({ success: false, message: 'Local path cannot be empty' });
+    }
+
+    const resolvedPath = path.resolve(localPath);
 
     // Security check 1: reject obvious system roots & OS directories
     if (isSystemPath(resolvedPath)) {
@@ -499,11 +504,20 @@ exports.registerExistingFolder = async (req, res, next) => {
       });
     }
 
-    // Deduplication check: if already registered by this user, return existing project without creating duplicate
-    const existingByPath = await Project.findOne({ ownerId: req.user.id, localPath: realRoot });
+    // Deduplication check: case-insensitive on Windows, exact on POSIX
+    const existingProjects = await Project.find({ ownerId: req.user.id, projectType: 'local' });
+    const existingByPath = existingProjects.find(p => {
+      if (!p.localPath) return false;
+      if (process.platform === 'win32') {
+        return path.resolve(p.localPath).toLowerCase() === path.resolve(realRoot).toLowerCase();
+      }
+      return path.resolve(p.localPath) === path.resolve(realRoot);
+    });
+
     if (existingByPath) {
       existingByPath.lastOpenedAt = new Date();
       existingByPath.status = 'active';
+      existingByPath.localPath = realRoot;
       if (displayName && displayName.trim()) {
         existingByPath.displayName = displayName.trim();
       } else if (name && name.trim() && name.trim() !== existingByPath.name) {
@@ -512,6 +526,7 @@ exports.registerExistingFolder = async (req, res, next) => {
       await existingByPath.save();
 
       const projectData = existingByPath.toObject();
+      projectData.id = existingByPath._id.toString();
       projectData.isAccessible = true;
 
       return res.status(200).json({
@@ -584,6 +599,7 @@ exports.registerExistingFolder = async (req, res, next) => {
     });
 
     const projectData = project.toObject();
+    projectData.id = project._id.toString();
     projectData.isAccessible = true;
 
     return res.status(201).json({
@@ -607,12 +623,17 @@ exports.registerExistingFolder = async (req, res, next) => {
 // @access  Private
 exports.validateWorkspacePath = async (req, res) => {
   try {
-    const { localPath } = req.body;
+    let { localPath } = req.body;
     if (!localPath || typeof localPath !== 'string' || !localPath.trim()) {
       return res.status(400).json({ success: false, message: 'Local path is required.' });
     }
 
-    const resolved = path.resolve(localPath.trim());
+    localPath = localPath.trim().replace(/^["']|["']$/g, '').trim();
+    if (!localPath) {
+      return res.status(400).json({ success: false, message: 'Local path cannot be empty.' });
+    }
+
+    const resolved = path.resolve(localPath);
 
     if (isSystemPath(resolved)) {
       return res.status(400).json({
@@ -1130,20 +1151,22 @@ exports.selectDirectory = (req, res) => {
     '$form.BringToFront()',
     '$form.Activate()',
     '$dlg = New-Object System.Windows.Forms.FolderBrowserDialog',
-    '$dlg.Description = "Select project directory"',
+    '$dlg.Description = "Select project workspace directory"',
     '$dlg.ShowNewFolderButton = $true',
+    'try { $dlg.AutoUpgradeEnabled = $true } catch {}',
+    'try { $dlg.RootFolder = [System.Environment+SpecialFolder]::MyComputer } catch {}',
     'try { $dlg.UseDescriptionForTitle = $true } catch {}',
   ];
 
   if (initialPath) {
-    const safeInitial = initialPath.replace(/'/g, "''");
-    scriptLines.push(`if (Test-Path -LiteralPath '${safeInitial}') { $dlg.SelectedPath = '${safeInitial}' }`);
+    const cleanInitial = initialPath.replace(/^["']|["']$/g, '').replace(/'/g, "''");
+    scriptLines.push(`if (Test-Path -LiteralPath '${cleanInitial}') { $dlg.SelectedPath = '${cleanInitial}' }`);
   }
 
   scriptLines.push(
     '$result = $dlg.ShowDialog($form)',
     '$form.Dispose()',
-    'if ($result -eq [System.Windows.Forms.DialogResult]::OK) {',
+    'if ($result -eq [System.Windows.Forms.DialogResult]::OK -and $dlg.SelectedPath) {',
     '    Write-Output $dlg.SelectedPath',
     '}'
   );
@@ -1165,7 +1188,7 @@ exports.selectDirectory = (req, res) => {
 
       if (error && error.killed) {
         console.log('[selectDirectory] Process cancelled/aborted');
-        return res.status(200).json({ success: true, path: null });
+        return res.status(200).json({ success: true, path: null, cancelled: true });
       }
 
       if (error) {
@@ -1174,17 +1197,31 @@ exports.selectDirectory = (req, res) => {
         if (stderr) console.error('[selectDirectory] stderr:', stderr.trim());
       }
 
-      const lines = (stdout || '').trim().split(/\r?\n/);
-      const selectedPath = lines[lines.length - 1].trim();
+      const lines = (stdout || '').trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const selectedPath = lines.length > 0 ? lines[lines.length - 1] : null;
 
       if (!selectedPath) {
         // User cancelled the dialog — not an error
         console.log(`[PERF][selectDirectory] User cancelled`);
-        return res.status(200).json({ success: true, path: null });
+        return res.status(200).json({ success: true, path: null, cancelled: true });
+      }
+
+      // Validate selected path actually exists and is a directory
+      try {
+        const stats = require('fs').statSync(selectedPath);
+        if (!stats.isDirectory()) {
+          return res.status(400).json({ success: false, message: 'Selected item is a file, not a directory.', path: null });
+        }
+      } catch (statErr) {
+        return res.status(400).json({ success: false, message: 'Selected directory cannot be accessed on disk.', path: null });
       }
 
       console.log(`[PERF][selectDirectory] T3 — path returned "${selectedPath}" (${Date.now() - t0}ms)`);
-      res.status(200).json({ success: true, path: selectedPath });
+      res.status(200).json({
+        success: true,
+        path: selectedPath,
+        folderName: path.basename(selectedPath)
+      });
     }
   );
 
