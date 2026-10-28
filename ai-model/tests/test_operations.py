@@ -292,6 +292,130 @@ def test_docs_generate_as_proposal(mock_post):
     assert "# DevPilot Demo App" in data["proposal"]["changes"][0]["content"]
 
 
+@patch("httpx.AsyncClient.post")
+def test_docs_revise_as_proposal(mock_post):
+    """Verify /api/docs/generate handles revisions and marks operation as EDIT."""
+    revised_markdown = "# DevPilot Demo App\n\nUpdated with Docker and Architecture sections."
+    mock_response = httpx.Response(
+        status_code=200,
+        json={
+            "model": "qwen2.5-coder:3b",
+            "message": {"role": "assistant", "content": revised_markdown},
+            "done_reason": "stop",
+        },
+        request=httpx.Request("POST", "http://localhost:11434/api/chat"),
+    )
+    mock_post.return_value = mock_response
+
+    doc_req = {
+        "project_name": "DevPilot",
+        "doc_type": "readme",
+        "title": "README.md",
+        "current_content": "# DevPilot Demo App\n\nInitial version.",
+        "revision_instruction": "Add Docker setup and Architecture sections.",
+    }
+
+    response = client.post("/api/docs/generate", json=doc_req)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["doc_type"] == "readme"
+    assert "Updated with Docker" in data["content"]
+    assert data["proposal"] is not None
+    assert data["proposal"]["changes"][0]["operation"] == "edit"
+    assert data["title"] == "README.md"
+
+
+@patch("httpx.AsyncClient.post")
+def test_docs_generate_with_instructions_audience_tone(mock_post):
+    """Verify /api/docs/generate handles instructions, audience, tone, length."""
+    doc_markdown = "# API Specification\n\n## Overview\n\nREST API.\n\n## Endpoints\n\nGET /users."
+    mock_response = httpx.Response(
+        status_code=200,
+        json={
+            "model": "qwen2.5-coder:3b",
+            "message": {"role": "assistant", "content": doc_markdown},
+            "done_reason": "stop",
+        },
+        request=httpx.Request("POST", "http://localhost:11434/api/chat"),
+    )
+    mock_post.return_value = mock_response
+
+    doc_req = {
+        "project_name": "DevPilot",
+        "doc_type": "api",
+        "title": "API Specification",
+        "instructions": "Document user endpoints in detail",
+        "audience": "external developers",
+        "tone": "technical",
+        "length": "medium",
+    }
+
+    response = client.post("/api/docs/generate", json=doc_req)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["doc_type"] == "api"
+    assert data["title"] == "API Specification"
+    assert data["word_count"] > 0
+    assert "Overview" in data["sections"]
+    assert "Endpoints" in data["sections"]
+    assert data["proposal"]["changes"][0]["path"] == "docs/API.md"
+
+
+@patch("httpx.AsyncClient.post")
+def test_docs_generate_normalizes_outer_markdown_fences(mock_post):
+    """Verify /api/docs/generate strips accidental outer ```markdown ... ``` fences."""
+    raw_wrapped = "```markdown\n# Wrapped Document\n\n## Introduction\n\nContent here.\n```"
+    mock_response = httpx.Response(
+        status_code=200,
+        json={
+            "model": "qwen2.5-coder:3b",
+            "message": {"role": "assistant", "content": raw_wrapped},
+            "done_reason": "stop",
+        },
+        request=httpx.Request("POST", "http://localhost:11434/api/chat"),
+    )
+    mock_post.return_value = mock_response
+
+    doc_req = {
+        "project_name": "DevPilot",
+        "doc_type": "meeting_notes",
+        "title": "Weekly Sync",
+    }
+
+    response = client.post("/api/docs/generate", json=doc_req)
+    assert response.status_code == 200
+    data = response.json()
+    assert not data["content"].startswith("```")
+    assert not data["content"].endswith("```")
+    assert data["content"].startswith("# Wrapped Document")
+    assert data["proposal"]["changes"][0]["path"] == "docs/MEETING_NOTES.md"
+
+
+@patch("httpx.AsyncClient.post")
+def test_docs_generate_empty_output_handled(mock_post):
+    """Verify /api/docs/generate returns 502 when Ollama outputs empty content."""
+    mock_response = httpx.Response(
+        status_code=200,
+        json={
+            "model": "qwen2.5-coder:3b",
+            "message": {"role": "assistant", "content": "   "},
+            "done_reason": "stop",
+        },
+        request=httpx.Request("POST", "http://localhost:11434/api/chat"),
+    )
+    mock_post.return_value = mock_response
+
+    doc_req = {
+        "project_name": "DevPilot",
+        "doc_type": "readme",
+    }
+
+    response = client.post("/api/docs/generate", json=doc_req)
+    assert response.status_code == 502
+    data = response.json()
+    assert data["code"] == "EMPTY_INFERENCE_OUTPUT"
+
+
 # ==============================================================================
 # 6. Invalid Operation Parameter Validation
 # ==============================================================================

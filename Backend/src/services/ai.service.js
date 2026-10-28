@@ -213,9 +213,22 @@ class AiService {
   }
 
   /**
-   * Generates project documentation using Python AI service
+   * Generates or revises project documentation using Python AI service
    */
-  static async generateDocumentation({ project, docType = 'readme', model }) {
+  static async generateDocumentation({
+    project,
+    docType = 'readme',
+    title,
+    instructions,
+    sourceContent,
+    audience,
+    tone,
+    length,
+    includeProjectContext = true,
+    currentContent,
+    revisionInstruction,
+    model
+  }) {
     if (!project) {
       const err = new Error('Project context is required to generate documentation.');
       err.status = 400;
@@ -228,7 +241,7 @@ class AiService {
     let treeStr = '';
     const keyFiles = {};
 
-    if (project.localPath) {
+    if (includeProjectContext && project.localPath) {
       try {
         const ignoreRules = await AiContextService.loadIgnoreRules(project.localPath);
         const tree = await AiContextService.buildProjectTree(project.localPath, ignoreRules);
@@ -249,6 +262,15 @@ class AiService {
       project_name: project.name,
       technology: project.technology || '',
       doc_type: docType || 'readme',
+      title: title || undefined,
+      instructions: instructions || undefined,
+      source_content: sourceContent || undefined,
+      audience: audience || undefined,
+      tone: tone || undefined,
+      length: length || undefined,
+      include_project_context: includeProjectContext !== undefined ? includeProjectContext : true,
+      current_content: currentContent || undefined,
+      revision_instruction: revisionInstruction || undefined,
       project_tree: treeStr,
       key_files: keyFiles,
       model: model || process.env.OLLAMA_MODEL || 'qwen2.5-coder:3b'
@@ -305,6 +327,7 @@ class AiService {
 
     return {
       docType: data.doc_type,
+      title: data.title || title || data.doc_type,
       content: data.content,
       proposal,
       model: data.model

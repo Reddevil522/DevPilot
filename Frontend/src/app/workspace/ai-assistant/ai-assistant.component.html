@@ -1,51 +1,71 @@
 <div class="devpilot-ai">
   <!-- Header -->
-  <div class="devpilot-ai__header">
+  <header class="devpilot-ai__header">
     <div class="devpilot-ai__header-info">
-      <div class="devpilot-ai__header-logo"><lucide-icon name="bot" [style]="{'width': '20px', 'height': '20px'}"></lucide-icon></div>
+      <div class="devpilot-ai__header-logo" aria-hidden="true">
+        <lucide-icon name="bot" [size]="16"></lucide-icon>
+      </div>
       <div class="devpilot-ai__header-text">
-        <div class="devpilot-ai__title">
-          DevPilot AI
-          <span class="devpilot-ai__status-wrap" title="{{ isThinking() ? 'Thinking...' : 'Online' }}">
+        <div class="devpilot-ai__title-row">
+          <span class="devpilot-ai__title">DevPilot AI</span>
+          <div class="devpilot-ai__status-wrap" [attr.title]="isThinking() ? 'AI is thinking...' : 'AI Assistant is ready'">
             <span class="devpilot-ai__status-dot" [class.devpilot-ai__status-dot--thinking]="isThinking()"></span>
             <span class="devpilot-ai__status-text">{{ isThinking() ? 'Thinking...' : 'Online' }}</span>
-          </span>
+          </div>
         </div>
         <div class="devpilot-ai__subtitle">AI Coding Assistant</div>
       </div>
     </div>
     <div class="devpilot-ai__header-actions">
-      <button class="devpilot-ai__header-btn" (click)="clearChat()" title="Clear chat">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <polyline points="3 6 5 20 19 20 21 6 3 6"/><path d="M8 6V4a2 2 0 012-2h0a2 2 0 012 2v2" stroke-linecap="round"/>
-          <line x1="10" y1="11" x2="10" y2="17"/><line x1="7" y1="11" x2="7.5" y2="17"/>
-        </svg>
+      <button 
+        type="button"
+        class="devpilot-ai__header-btn devpilot-ai__header-btn--clear" 
+        (click)="clearChat()" 
+        title="Clear conversation"
+        aria-label="Clear chat"
+      >
+        <lucide-icon name="trash-2" [size]="14"></lucide-icon>
       </button>
-      <button class="devpilot-ai__header-btn" (click)="closePanel.emit()" title="Close AI">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M12 4L4 12M4 4l8 8" stroke-linecap="round"/>
-        </svg>
+      <button 
+        type="button"
+        class="devpilot-ai__header-btn devpilot-ai__header-btn--close" 
+        (click)="closePanel.emit()" 
+        title="Close AI panel"
+        aria-label="Close AI"
+      >
+        <lucide-icon name="x" [size]="14"></lucide-icon>
       </button>
     </div>
-  </div>
+  </header>
 
   <!-- Context Banner -->
-  <div class="devpilot-ai__context">
-    <span class="devpilot-ai__context-label">Using</span>
-    <span class="devpilot-ai__context-tag">
-      <span class="devpilot-ai__context-dot devpilot-ai__context-dot--file"></span>
-      {{ context().currentFile || 'No file selected' }}
-    </span>
-    <span class="devpilot-ai__context-tag">
-      <span class="devpilot-ai__context-dot devpilot-ai__context-dot--project"></span>
-      {{ context().projectName || projectName || 'Project' }}
-    </span>
-    @if (context().selectedCode) {
-      <span class="devpilot-ai__context-tag devpilot-ai__context-tag--selection">
-        <span class="devpilot-ai__context-dot devpilot-ai__context-dot--selection"></span>
-        Selection ({{ getSelectedLineCount() }} lines)
+  <div class="devpilot-ai__context" aria-label="AI Context">
+    <span class="devpilot-ai__context-label">Context</span>
+    <div class="devpilot-ai__context-chips">
+      <span 
+        class="devpilot-ai__context-tag devpilot-ai__context-tag--file" 
+        [attr.title]="'Active File: ' + (context().currentFile || 'No file selected')"
+      >
+        <lucide-icon name="file-code-2" [size]="12" class="devpilot-ai__context-icon"></lucide-icon>
+        <span class="devpilot-ai__context-text">{{ context().currentFile || 'No file selected' }}</span>
       </span>
-    }
+      <span 
+        class="devpilot-ai__context-tag devpilot-ai__context-tag--project" 
+        [attr.title]="'Active Project: ' + (context().projectName || projectName || 'Project')"
+      >
+        <lucide-icon name="folder" [size]="12" class="devpilot-ai__context-icon"></lucide-icon>
+        <span class="devpilot-ai__context-text">{{ context().projectName || projectName || 'Project' }}</span>
+      </span>
+      @if (context().selectedCode) {
+        <span 
+          class="devpilot-ai__context-tag devpilot-ai__context-tag--selection" 
+          [attr.title]="getSelectedLineCount() + ' lines selected in active editor'"
+        >
+          <lucide-icon name="code-2" [size]="12" class="devpilot-ai__context-icon"></lucide-icon>
+          <span class="devpilot-ai__context-text">Selected ({{ getSelectedLineCount() }}L)</span>
+        </span>
+      }
+    </div>
   </div>
 
   <!-- Messages -->
@@ -53,7 +73,9 @@
     @for (msg of messages(); track msg.id) {
       <div class="devpilot-ai__message devpilot-ai__message--{{ msg.role }}">
         @if (msg.role === 'assistant') {
-          <div class="devpilot-ai__avatar"><lucide-icon name="bot" [style]="{'width': '16px', 'height': '16px'}"></lucide-icon></div>
+          <div class="devpilot-ai__avatar devpilot-ai__avatar--assistant" aria-hidden="true">
+            <lucide-icon name="bot" [size]="14"></lucide-icon>
+          </div>
         }
         <div class="devpilot-ai__bubble" [class.devpilot-ai__bubble--error]="msg.isError">
           <div class="devpilot-ai__content" [innerHTML]="formatContent(msg.content)"></div>
@@ -150,7 +172,9 @@
           <div class="devpilot-ai__timestamp">{{ msg.timestamp | date:'HH:mm' }}</div>
         </div>
         @if (msg.role === 'user') {
-          <div class="devpilot-ai__avatar devpilot-ai__avatar--user">G</div>
+          <div class="devpilot-ai__avatar devpilot-ai__avatar--user" aria-hidden="true">
+            <lucide-icon name="user" [size]="13"></lucide-icon>
+          </div>
         }
       </div>
     }
@@ -158,9 +182,11 @@
     <!-- Thinking indicator -->
     @if (isThinking()) {
       <div class="devpilot-ai__message devpilot-ai__message--assistant">
-        <div class="devpilot-ai__avatar"><lucide-icon name="bot" [style]="{'width': '16px', 'height': '16px'}"></lucide-icon></div>
+        <div class="devpilot-ai__avatar devpilot-ai__avatar--assistant" aria-hidden="true">
+          <lucide-icon name="bot" [size]="14"></lucide-icon>
+        </div>
         <div class="devpilot-ai__bubble devpilot-ai__bubble--thinking">
-          <div class="devpilot-ai__thinking-dots">
+          <div class="devpilot-ai__thinking-dots" aria-label="Thinking">
             <span></span><span></span><span></span>
           </div>
         </div>
@@ -172,8 +198,18 @@
 
   <!-- Quick Actions -->
   <div class="devpilot-ai__quick-actions-container">
-    <div class="devpilot-ai__quick-actions-header" (click)="toggleQuickActions()">
-      <span>Suggested Actions</span>
+    <div 
+      class="devpilot-ai__quick-actions-header" 
+      (click)="toggleQuickActions()"
+      role="button"
+      tabindex="0"
+      (keydown.enter)="toggleQuickActions()"
+      (keydown.space)="toggleQuickActions(); $event.preventDefault()"
+    >
+      <div class="devpilot-ai__quick-actions-title-wrap">
+        <lucide-icon name="sparkles" [size]="12" class="devpilot-ai__quick-actions-title-icon"></lucide-icon>
+        <span class="devpilot-ai__quick-actions-title">Suggested Actions</span>
+      </div>
       <button 
         type="button" 
         class="devpilot-ai__quick-actions-toggle"
@@ -184,14 +220,21 @@
       >
         <lucide-icon 
           name="chevron-up" 
-          [style]="{'width': '16px', 'height': '16px'}"
+          [size]="13"
         ></lucide-icon>
       </button>
     </div>
     
     <div class="devpilot-ai__quick-actions" *ngIf="quickActionsExpanded()">
       @for (action of quickActions; track action.label) {
-        <button class="devpilot-ai__action" (click)="sendMessage(action.prompt, action.operation)" [disabled]="isThinking()">
+        <button 
+          type="button"
+          class="devpilot-ai__action" 
+          (click)="sendMessage(action.prompt, action.operation)" 
+          [disabled]="isThinking()"
+          [attr.title]="action.prompt"
+        >
+          <lucide-icon [name]="action.icon" [size]="11.5" class="devpilot-ai__action-icon"></lucide-icon>
           <span class="devpilot-ai__action-label">{{ action.label }}</span>
         </button>
       }
@@ -209,18 +252,30 @@
         (keydown)="onKeydown($event)"
         (input)="autoResize($event)"
         id="ai-input"
+        aria-label="Ask DevPilot AI"
       ></textarea>
       <div class="devpilot-ai__composer-actions">
         <button
+          type="button"
           class="devpilot-ai__send-btn"
           (click)="sendMessage()"
           [disabled]="!inputControl.value || isThinking()"
           id="ai-send-btn"
-          title="Send Message"
+          [title]="isThinking() ? 'AI is thinking...' : 'Send Message (Enter)'"
+          [attr.aria-label]="isThinking() ? 'AI is thinking' : 'Send message'"
         >
-          <lucide-icon name="send" [style]="{'width': '14px', 'height': '14px'}"></lucide-icon>
+          @if (isThinking()) {
+            <lucide-icon name="loader" [size]="13" class="devpilot-ai__send-spinner"></lucide-icon>
+          } @else {
+            <lucide-icon name="send" [size]="13"></lucide-icon>
+          }
         </button>
       </div>
+    </div>
+    <div class="devpilot-ai__composer-footer">
+      <span class="devpilot-ai__composer-hint">
+        <kbd class="devpilot-ai__kbd">↵</kbd> send <span class="devpilot-ai__hint-sep">•</span> <kbd class="devpilot-ai__kbd">Shift+↵</kbd> newline
+      </span>
     </div>
   </div>
 </div>

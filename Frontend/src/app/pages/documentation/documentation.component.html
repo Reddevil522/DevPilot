@@ -1,110 +1,645 @@
 <div class="devpilot-docs dp-scroll">
 
-  <!-- GRID VIEW -->
-  @if (view() === 'grid') {
-    <div class="devpilot-docs__header dp-fade-in">
-      <div>
+  <!-- TOP HEADER / PROJECT SELECTOR -->
+  <header class="devpilot-docs__header dp-fade-in">
+    <div class="devpilot-docs__header-left">
+      <div class="devpilot-docs__title-row">
         <h1 class="devpilot-docs__title">Project Documentation</h1>
-        <p class="devpilot-docs__subtitle">Manage and generate documentation for your project</p>
+        <span class="devpilot-docs__badge">AI Powered</span>
       </div>
-      <button class="devpilot-docs__generate-btn" (click)="openGenerator()" id="generate-docs-btn">
-        <lucide-icon name="sparkles" [style]="{'width': '14px', 'height': '14px', 'margin-right': '6px'}"></lucide-icon> Generate with AI
-      </button>
+      <p class="devpilot-docs__subtitle">Generate, edit, and export structured documentation powered by your local Ollama model.</p>
     </div>
 
-    <div class="devpilot-docs__grid dp-fade-in">
-      @for (card of docCards; track card.title) {
-        <div class="devpilot-docs__card dp-glass">
-          <div class="devpilot-docs__card-icon"><lucide-icon [name]="card.icon"></lucide-icon></div>
-          <div class="devpilot-docs__card-info">
-            <div class="devpilot-docs__card-title">{{ card.title }}</div>
-            <div class="devpilot-docs__card-desc">{{ card.description }}</div>
-            @if (card.lastGenerated) {
-              <div class="devpilot-docs__card-date">Last generated {{ card.lastGenerated }}</div>
+    <div class="devpilot-docs__header-right">
+      <!-- Project Selector -->
+      <div class="devpilot-docs__project-selector">
+        <span class="devpilot-docs__project-label">Project:</span>
+        @if (projects().length > 0) {
+          <select 
+            class="devpilot-docs__project-select" 
+            [ngModel]="selectedProject()?.id" 
+            (ngModelChange)="onProjectChange($event)"
+            [disabled]="isGenerating()"
+          >
+            @for (p of projects(); track p.id) {
+              <option [value]="p.id">{{ p.displayName || p.name }}</option>
             }
-          </div>
-          <div class="devpilot-docs__card-actions">
-            <button class="devpilot-docs__card-btn" (click)="openGenerator(card.type)"><lucide-icon name="sparkles" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Generate</button>
-            <button class="devpilot-docs__card-btn devpilot-docs__card-btn--secondary">Edit</button>
-            <button class="devpilot-docs__card-btn devpilot-docs__card-btn--secondary">Export</button>
-          </div>
-        </div>
-      }
+          </select>
+        } @else {
+          <span class="devpilot-docs__no-projects">No projects loaded</span>
+        }
+      </div>
 
-      <!-- Empty state card -->
-      <div class="devpilot-docs__empty-card dp-glass">
-        <div class="devpilot-docs__empty-icon"><lucide-icon name="file-text" [style]="{'width': '48px', 'height': '48px'}"></lucide-icon></div>
-        <div class="devpilot-docs__empty-title">No documentation yet</div>
-        <p class="devpilot-docs__empty-desc">Let DevPilot AI generate documentation for your project.</p>
-        <button class="devpilot-docs__generate-btn devpilot-docs__generate-btn--sm" (click)="openGenerator()">
-          <lucide-icon name="sparkles" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Generate with AI
+      @if (view() === 'grid') {
+        <button 
+          class="devpilot-docs__primary-btn" 
+          (click)="openGenerator()" 
+          id="btn-open-generator"
+          [disabled]="!selectedProject()"
+        >
+          <lucide-icon name="sparkles" size="14"></lucide-icon>
+          <span>Generate with AI</span>
         </button>
-      </div>
+      }
     </div>
-  }
+  </header>
 
-  <!-- GENERATOR VIEW -->
-  @if (view() === 'generator') {
-    <div class="devpilot-docs__generator dp-fade-in">
-      <div class="devpilot-docs__generator-header">
-        <button class="devpilot-docs__back-btn" (click)="backToGrid()"><lucide-icon name="arrow-left" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Back</button>
-        <h2 class="devpilot-docs__generator-title">Generate Documentation</h2>
-      </div>
+  <!-- ========================================================================= -->
+  <!-- 1. GRID VIEW (Templates + Document History)                                -->
+  <!-- ========================================================================= -->
+  @if (view() === 'grid') {
+    <div class="devpilot-docs__main-grid dp-fade-in">
 
-      @if (!isGenerating()) {
-        <div class="devpilot-docs__generator-form dp-glass">
-          <div class="devpilot-docs__form-label">Documentation Type</div>
-          <div class="devpilot-docs__type-grid">
-            @for (type of docTypes; track type.value) {
-              <label class="devpilot-docs__type-option" [class.devpilot-docs__type-option--active]="selectedType.value === type.value">
-                <input type="radio" [formControl]="selectedType" [value]="type.value" />
-                <div class="devpilot-docs__type-name">{{ type.label }}</div>
-                <div class="devpilot-docs__type-desc">{{ type.desc }}</div>
-              </label>
+      <!-- Section: Quick Start Templates -->
+      <section class="devpilot-docs__section">
+        <div class="devpilot-docs__section-title">
+          <lucide-icon name="sparkles" size="16"></lucide-icon>
+          <h2>Quick Generate by Type</h2>
+        </div>
+        <p class="devpilot-docs__section-desc">Choose a document template to immediately configure and generate documentation.</p>
+
+        <div class="devpilot-docs__cards-grid">
+          @for (card of quickCards; track card.type) {
+            <div class="devpilot-docs__card dp-glass">
+              <div class="devpilot-docs__card-top">
+                <div class="devpilot-docs__card-icon">
+                  <lucide-icon [name]="card.icon" size="20"></lucide-icon>
+                </div>
+                @if (card.badge) {
+                  <span class="devpilot-docs__card-badge">{{ card.badge }}</span>
+                }
+              </div>
+              <div class="devpilot-docs__card-info">
+                <h3 class="devpilot-docs__card-name">{{ card.title }}</h3>
+                <p class="devpilot-docs__card-desc">{{ card.description }}</p>
+              </div>
+              <div class="devpilot-docs__card-footer">
+                <button 
+                  class="devpilot-docs__card-action-btn" 
+                  (click)="openGenerator(card.type)"
+                  [disabled]="!selectedProject()"
+                  [title]="'Generate ' + card.title"
+                >
+                  <lucide-icon name="sparkles" size="13"></lucide-icon>
+                  <span>Generate</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Section: Document History -->
+      <section class="devpilot-docs__section">
+        <div class="devpilot-docs__section-header">
+          <div class="devpilot-docs__section-title">
+            <lucide-icon name="file-text" size="16"></lucide-icon>
+            <h2>Project Documentation History</h2>
+            @if (projectDocuments().length > 0) {
+              <span class="devpilot-docs__count-pill">{{ projectDocuments().length }}</span>
             }
           </div>
-          <button class="devpilot-docs__generate-btn" (click)="generate()" id="start-generation-btn">
-            <lucide-icon name="sparkles" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Generate with AI
-          </button>
+          @if (selectedProject()) {
+            <button 
+              class="devpilot-docs__refresh-btn" 
+              (click)="loadProjectHistory()" 
+              [disabled]="isLoadingHistory()"
+              title="Refresh document history"
+            >
+              <lucide-icon name="refresh-cw" size="13" [class.devpilot-docs__spin]="isLoadingHistory()"></lucide-icon>
+              <span>Refresh</span>
+            </button>
+          }
         </div>
-      }
 
-      @if (isGenerating()) {
-        <div class="devpilot-docs__progress dp-glass dp-fade-in">
-          <div class="devpilot-docs__progress-spinner">
-            <div class="devpilot-docs__spinner-ring"></div>
-            <span><lucide-icon name="sparkles" [style]="{'width': '16px', 'height': '16px'}"></lucide-icon></span>
+        @if (isLoadingHistory()) {
+          <div class="devpilot-docs__history-loading">
+            <div class="dp-skeleton" style="height: 60px; width: 100%; border-radius: 8px; margin-bottom: 8px;"></div>
+            <div class="dp-skeleton" style="height: 60px; width: 100%; border-radius: 8px; margin-bottom: 8px;"></div>
           </div>
-          <div class="devpilot-docs__progress-steps">
-            @for (step of generationSteps; track $index; let i = $index) {
-              <div class="devpilot-docs__step" [class.devpilot-docs__step--done]="currentStep() > i" [class.devpilot-docs__step--active]="currentStep() === i">
-                <span class="devpilot-docs__step-icon">
-                  @if (currentStep() > i) { <lucide-icon name="check-circle" [style]="{'width':'16px','height':'16px', 'stroke':'var(--dp-accent-green)'}"></lucide-icon> } @else if (currentStep() === i) { <lucide-icon name="clock" [style]="{'width':'16px','height':'16px', 'stroke':'var(--dp-accent)'}"></lucide-icon> } @else { <lucide-icon name="circle" [style]="{'width':'16px','height':'16px'}"></lucide-icon> }
-                </span>
-                {{ step }}
+        } @else if (projectDocuments().length === 0) {
+          <!-- Empty State -->
+          <div class="devpilot-docs__empty-box dp-glass">
+            <div class="devpilot-docs__empty-icon">
+              <lucide-icon name="file-text" size="36"></lucide-icon>
+            </div>
+            <h3 class="devpilot-docs__empty-title">No documents generated yet for this project</h3>
+            <p class="devpilot-docs__empty-desc">
+              Generate a README, API Reference, Architecture Guide, or custom document.
+              All generated documents are saved here with version history.
+            </p>
+            <button 
+              class="devpilot-docs__primary-btn devpilot-docs__primary-btn--sm" 
+              (click)="openGenerator()"
+              [disabled]="!selectedProject()"
+            >
+              <lucide-icon name="sparkles" size="13"></lucide-icon>
+              <span>Generate First Document</span>
+            </button>
+          </div>
+        } @else {
+          <!-- Documents Table / List -->
+          <div class="devpilot-docs__history-list dp-glass">
+            @for (doc of projectDocuments(); track doc._id) {
+              <div class="devpilot-docs__history-item" (click)="openDocument(doc)">
+                <div class="devpilot-docs__history-icon">
+                  <lucide-icon [name]="getTypeIcon(doc.docType)" size="18"></lucide-icon>
+                </div>
+
+                <div class="devpilot-docs__history-info">
+                  <div class="devpilot-docs__history-title-row">
+                    <span class="devpilot-docs__history-title">{{ doc.title }}</span>
+                    <span class="devpilot-docs__type-pill">{{ getTypeLabel(doc.docType) }}</span>
+                    <span class="devpilot-docs__version-pill">v{{ doc.version }}</span>
+                  </div>
+                  <div class="devpilot-docs__history-meta">
+                    @if (doc.metadata?.wordCount) {
+                      <span>{{ doc.metadata?.wordCount }} words</span>
+                      <span class="devpilot-docs__dot">&bull;</span>
+                    }
+                    @if (doc.metadata?.generationTimeMs) {
+                      <span>{{ (doc.metadata!.generationTimeMs! / 1000).toFixed(1) }}s generation</span>
+                      <span class="devpilot-docs__dot">&bull;</span>
+                    }
+                    <span>Updated {{ doc.updatedAt | date:'mediumDate' }}</span>
+                  </div>
+                </div>
+
+                <div class="devpilot-docs__history-actions" (click)="$event.stopPropagation()">
+                  <button 
+                    class="devpilot-docs__btn-open" 
+                    (click)="openDocument(doc)"
+                    title="Open document editor and preview"
+                  >
+                    <lucide-icon name="eye" size="13"></lucide-icon>
+                    <span>Open & Edit</span>
+                  </button>
+
+                  <button 
+                    class="devpilot-docs__icon-btn" 
+                    (click)="currentDocument.set(doc); editableContent.setValue(doc.content); editableTitle.setValue(doc.title); exportDocument('markdown')"
+                    title="Export as Markdown"
+                  >
+                    <lucide-icon name="download" size="14"></lucide-icon>
+                  </button>
+
+                  <button 
+                    class="devpilot-docs__icon-btn devpilot-docs__icon-btn--danger" 
+                    (click)="deleteDocument(doc._id, $event)"
+                    title="Delete document"
+                  >
+                    <lucide-icon name="trash-2" size="14"></lucide-icon>
+                  </button>
+                </div>
               </div>
             }
           </div>
-        </div>
-      }
+        }
+      </section>
+
     </div>
   }
 
-  <!-- VIEWER VIEW -->
-  @if (view() === 'viewer' && generatedContent()) {
-    <div class="devpilot-docs__viewer dp-fade-in">
-      <div class="devpilot-docs__viewer-toolbar">
-        <button class="devpilot-docs__back-btn" (click)="backToGrid()"><lucide-icon name="arrow-left" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Back</button>
-        <span class="devpilot-docs__viewer-title">Generated Documentation</span>
-        <div class="devpilot-docs__viewer-actions">
-          <button class="devpilot-docs__card-btn"><lucide-icon name="copy" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Copy</button>
-          <button class="devpilot-docs__card-btn"><lucide-icon name="download" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Export</button>
-          <button class="devpilot-docs__generate-btn devpilot-docs__generate-btn--sm" (click)="openGenerator()"><lucide-icon name="sparkles" [style]="{'width': '14px', 'height': '14px', 'margin-right': '4px'}"></lucide-icon> Regenerate</button>
+  <!-- ========================================================================= -->
+  <!-- 2. GENERATOR VIEW                                                         -->
+  <!-- ========================================================================= -->
+  @if (view() === 'generator') {
+    <div class="devpilot-docs__generator-container dp-fade-in">
+      
+      <!-- Generator Toolbar -->
+      <div class="devpilot-docs__generator-toolbar">
+        <button class="devpilot-docs__back-btn" (click)="backToGrid()" [disabled]="isGenerating()">
+          <lucide-icon name="arrow-left" size="14"></lucide-icon>
+          <span>Back to Documents</span>
+        </button>
+        <h2 class="devpilot-docs__generator-heading">Generate Documentation with AI</h2>
+      </div>
+
+      <!-- Generator Form (Visible when not actively generating) -->
+      @if (!isGenerating()) {
+        <div class="devpilot-docs__form-card dp-glass">
+          
+          <!-- Selected Project notice -->
+          <div class="devpilot-docs__target-project">
+            <lucide-icon name="folder" size="14"></lucide-icon>
+            <span>Target Project:</span>
+            <strong>{{ selectedProject()?.displayName || selectedProject()?.name || 'No project selected' }}</strong>
+          </div>
+
+          <!-- Document Type Selector -->
+          <div class="devpilot-docs__form-group">
+            <label class="devpilot-docs__label">
+              <span>Select Document Type</span>
+              <span class="devpilot-docs__required">*</span>
+            </label>
+            <div class="devpilot-docs__types-grid">
+              @for (type of availableDocTypes(); track type.id) {
+                <button 
+                  type="button" 
+                  class="devpilot-docs__type-btn" 
+                  [class.devpilot-docs__type-btn--active]="selectedType.value === type.id"
+                  (click)="selectDocType(type.id)"
+                >
+                  <div class="devpilot-docs__type-btn-header">
+                    <lucide-icon [name]="getTypeIcon(type.id)" size="15"></lucide-icon>
+                    <span class="devpilot-docs__type-btn-name">{{ type.name }}</span>
+                  </div>
+                  <p class="devpilot-docs__type-btn-desc">{{ type.description }}</p>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Document Title -->
+          <div class="devpilot-docs__form-group">
+            <label class="devpilot-docs__label" for="doc-title-input">
+              <span>Document Title</span>
+              <span class="devpilot-docs__required">*</span>
+            </label>
+            <input 
+              id="doc-title-input" 
+              type="text" 
+              class="devpilot-docs__input" 
+              [formControl]="titleControl" 
+              placeholder="e.g. Project README — DevPilot"
+              maxlength="120"
+            />
+          </div>
+
+          <!-- Instructions & Topics -->
+          <div class="devpilot-docs__form-group">
+            <div class="devpilot-docs__label-row">
+              <label class="devpilot-docs__label" for="doc-instructions-input">
+                <span>User Instructions & Topics (Optional)</span>
+              </label>
+              <span class="devpilot-docs__char-count">{{ instructionsControl.value.length }} / 4000</span>
+            </div>
+            <textarea 
+              id="doc-instructions-input" 
+              class="devpilot-docs__textarea" 
+              [formControl]="instructionsControl" 
+              placeholder="Specify sections to focus on, prerequisites, target architecture, or specific implementation details you want highlighted..."
+              rows="4"
+              maxlength="4000"
+            ></textarea>
+          </div>
+
+          <!-- Source Content -->
+          <div class="devpilot-docs__form-group">
+            <div class="devpilot-docs__label-row">
+              <label class="devpilot-docs__label" for="doc-source-input">
+                <span>Reference Material or Source Text (Optional)</span>
+              </label>
+              <span class="devpilot-docs__char-count">{{ sourceContentControl.value.length }} / 32000</span>
+            </div>
+            <textarea 
+              id="doc-source-input" 
+              class="devpilot-docs__textarea devpilot-docs__textarea--code" 
+              [formControl]="sourceContentControl" 
+              placeholder="Paste existing code snippets, schema definitions, or notes to ground the AI generation in actual facts..."
+              rows="3"
+              maxlength="32000"
+            ></textarea>
+          </div>
+
+          <!-- Advanced Options Toggle -->
+          <div class="devpilot-docs__toggle-row">
+            <button 
+              type="button" 
+              class="devpilot-docs__toggle-btn" 
+              (click)="toggleAdvancedOptions()"
+            >
+              <lucide-icon [name]="showAdvancedOptions() ? 'chevron-up' : 'chevron-down'" size="14"></lucide-icon>
+              <span>{{ showAdvancedOptions() ? 'Hide Options' : 'Configure Options (Audience, Tone, Length)' }}</span>
+            </button>
+          </div>
+
+          <!-- Advanced Options Panel -->
+          @if (showAdvancedOptions()) {
+            <div class="devpilot-docs__options-panel dp-fade-in">
+              <div class="devpilot-docs__options-grid">
+                
+                <div class="devpilot-docs__option-item">
+                  <label class="devpilot-docs__label">Target Audience</label>
+                  <select class="devpilot-docs__select" [formControl]="audienceControl">
+                    <option value="developers">Developers (Technical)</option>
+                    <option value="general">General Users</option>
+                    <option value="stakeholders">Stakeholders & Management</option>
+                    <option value="students">Students / Learning</option>
+                    <option value="executive">Executive Summary</option>
+                  </select>
+                </div>
+
+                <div class="devpilot-docs__option-item">
+                  <label class="devpilot-docs__label">Tone of Voice</label>
+                  <select class="devpilot-docs__select" [formControl]="toneControl">
+                    <option value="technical">Technical & Precise</option>
+                    <option value="professional">Professional & Formal</option>
+                    <option value="conversational">Conversational & Accessible</option>
+                    <option value="concise">Concise & Direct</option>
+                    <option value="instructional">Step-by-step Instructional</option>
+                  </select>
+                </div>
+
+                <div class="devpilot-docs__option-item">
+                  <label class="devpilot-docs__label">Document Length</label>
+                  <select class="devpilot-docs__select" [formControl]="lengthControl">
+                    <option value="short">Short (~500 words)</option>
+                    <option value="medium">Medium (~1000 words)</option>
+                    <option value="comprehensive">Comprehensive (~2000 words)</option>
+                  </select>
+                </div>
+
+              </div>
+
+              <div class="devpilot-docs__checkbox-row">
+                <label class="devpilot-docs__checkbox-label">
+                  <input type="checkbox" [formControl]="includeContextControl" />
+                  <span>Include workspace project structure and tech stack to ground AI facts</span>
+                </label>
+              </div>
+            </div>
+          }
+
+          <!-- Generation Error Banner -->
+          @if (generationError()) {
+            <div class="devpilot-docs__error-banner dp-fade-in">
+              <lucide-icon name="triangle-alert" size="18"></lucide-icon>
+              <div class="devpilot-docs__error-content">
+                <span class="devpilot-docs__error-title">Generation Error</span>
+                <p class="devpilot-docs__error-desc">{{ generationError() }}</p>
+              </div>
+              <button class="devpilot-docs__retry-btn" (click)="generate()">
+                <lucide-icon name="refresh-cw" size="13"></lucide-icon>
+                <span>Retry</span>
+              </button>
+            </div>
+          }
+
+          <!-- Form Actions Footer -->
+          <div class="devpilot-docs__form-footer">
+            <button type="button" class="devpilot-docs__btn-secondary" (click)="backToGrid()">
+              Cancel
+            </button>
+
+            <button 
+              type="button" 
+              class="devpilot-docs__primary-btn" 
+              (click)="generate()" 
+              [disabled]="!selectedProject() || isGenerating()"
+              id="btn-start-generate"
+            >
+              <lucide-icon name="sparkles" size="15"></lucide-icon>
+              <span>Generate Documentation</span>
+            </button>
+          </div>
+
+        </div>
+      }
+
+      <!-- Generating Progress State -->
+      @if (isGenerating()) {
+        <div class="devpilot-docs__progress-card dp-glass dp-fade-in">
+          <div class="devpilot-docs__spinner-wrap">
+            <div class="devpilot-docs__spinner-ring"></div>
+            <lucide-icon name="sparkles" size="24" class="devpilot-docs__spinner-sparkle"></lucide-icon>
+          </div>
+
+          <h3 class="devpilot-docs__progress-title">Generating Documentation...</h3>
+          <p class="devpilot-docs__progress-current">{{ generationStep() }}</p>
+
+          <div class="devpilot-docs__progress-steps-list">
+            @for (step of generationSteps; track $index; let i = $index) {
+              <div 
+                class="devpilot-docs__progress-step-item" 
+                [class.devpilot-docs__progress-step-item--done]="currentStep() > i + 1"
+                [class.devpilot-docs__progress-step-item--active]="currentStep() === i + 1"
+              >
+                <div class="devpilot-docs__step-marker">
+                  @if (currentStep() > i + 1) {
+                    <lucide-icon name="check-circle" size="16" class="devpilot-docs__step-icon-done"></lucide-icon>
+                  } @else if (currentStep() === i + 1) {
+                    <div class="devpilot-docs__step-dot-active"></div>
+                  } @else {
+                    <div class="devpilot-docs__step-dot-pending"></div>
+                  }
+                </div>
+                <span class="devpilot-docs__step-text">{{ step }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="devpilot-docs__progress-footer-note">
+            <lucide-icon name="bot" size="14"></lucide-icon>
+            <span>Local Ollama AI model (<code>qwen2.5-coder:3b</code>) is processing inference safely on your machine.</span>
+          </div>
+        </div>
+      }
+
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- 3. VIEWER & EDITOR VIEW                                                   -->
+  <!-- ========================================================================= -->
+  @if (view() === 'viewer') {
+    <div class="devpilot-docs__viewer-container dp-fade-in">
+      
+      <!-- Top Action Toolbar -->
+      <div class="devpilot-docs__viewer-topbar dp-glass">
+        <div class="devpilot-docs__viewer-topbar-left">
+          <button class="devpilot-docs__back-btn" (click)="backToGrid()" title="Back to documents">
+            <lucide-icon name="arrow-left" size="14"></lucide-icon>
+            <span>Back</span>
+          </button>
+
+          <div class="devpilot-docs__viewer-title-wrap">
+            <input 
+              type="text" 
+              class="devpilot-docs__viewer-title-input" 
+              [formControl]="editableTitle"
+              (blur)="saveDocumentChanges()"
+              title="Click to rename document"
+            />
+            @if (currentDocument()?.version) {
+              <span class="devpilot-docs__version-pill">v{{ currentDocument()?.version }}</span>
+            }
+            <span class="devpilot-docs__stats-pill">{{ getWordCount(editableContent.value) }} words</span>
+          </div>
+        </div>
+
+        <div class="devpilot-docs__viewer-topbar-right">
+          
+          <!-- Mode switcher: Split | Preview | Edit -->
+          <div class="devpilot-docs__mode-switch">
+            <button 
+              class="devpilot-docs__mode-btn" 
+              [class.devpilot-docs__mode-btn--active]="viewerMode() === 'split'"
+              (click)="setViewerMode('split')"
+              title="Split View (Editor + Live Preview)"
+            >
+              Split
+            </button>
+            <button 
+              class="devpilot-docs__mode-btn" 
+              [class.devpilot-docs__mode-btn--active]="viewerMode() === 'preview'"
+              (click)="setViewerMode('preview')"
+              title="Rendered Markdown Preview"
+            >
+              Preview
+            </button>
+            <button 
+              class="devpilot-docs__mode-btn" 
+              [class.devpilot-docs__mode-btn--active]="viewerMode() === 'edit'"
+              (click)="setViewerMode('edit')"
+              title="Raw Markdown Editor"
+            >
+              Edit
+            </button>
+          </div>
+
+          <!-- Document Action Buttons -->
+          <div class="devpilot-docs__action-group">
+            <button 
+              class="devpilot-docs__action-btn" 
+              (click)="toggleRevisionBar()"
+              [class.devpilot-docs__action-btn--active]="showRevisionBar()"
+              title="Revise document with AI"
+            >
+              <lucide-icon name="sparkles" size="13"></lucide-icon>
+              <span>Revise with AI</span>
+            </button>
+
+            <button 
+              class="devpilot-docs__action-btn" 
+              (click)="saveDocumentChanges()" 
+              [disabled]="isSaving()"
+              title="Save changes to database"
+            >
+              <lucide-icon name="check" size="13"></lucide-icon>
+              <span>{{ isSaving() ? 'Saving...' : 'Save' }}</span>
+            </button>
+
+            <button 
+              class="devpilot-docs__action-btn" 
+              (click)="saveToWorkspace()" 
+              [disabled]="isSavingToWorkspace()"
+              title="Write document directly to project workspace filesystem"
+            >
+              <lucide-icon name="folder" size="13"></lucide-icon>
+              <span>{{ isSavingToWorkspace() ? 'Writing...' : 'Save to Project' }}</span>
+            </button>
+
+            <button 
+              class="devpilot-docs__action-btn" 
+              (click)="copyToClipboard()"
+              title="Copy markdown content to clipboard"
+            >
+              <lucide-icon name="copy" size="13"></lucide-icon>
+              <span>Copy</span>
+            </button>
+
+            <button 
+              class="devpilot-docs__action-btn" 
+              (click)="exportDocument('markdown')"
+              title="Download as .md file"
+            >
+              <lucide-icon name="download" size="13"></lucide-icon>
+              <span>Export MD</span>
+            </button>
+
+            <button 
+              class="devpilot-docs__action-btn" 
+              (click)="exportDocument('html')"
+              title="Download formatted HTML document"
+            >
+              <lucide-icon name="download" size="13"></lucide-icon>
+              <span>Export HTML</span>
+            </button>
+
+            <button 
+              class="devpilot-docs__action-btn devpilot-docs__action-btn--primary" 
+              (click)="openGenerator(currentDocument()?.docType)"
+              title="Regenerate with fresh parameters"
+            >
+              <lucide-icon name="refresh-cw" size="13"></lucide-icon>
+              <span>Regenerate</span>
+            </button>
+          </div>
+
         </div>
       </div>
-      <div class="devpilot-docs__doc-content dp-glass dp-scroll">
-        <pre class="devpilot-docs__doc-pre">{{ generatedContent() }}</pre>
+
+      <!-- Revision Prompt Bar -->
+      @if (showRevisionBar()) {
+        <div class="devpilot-docs__revision-bar dp-glass dp-fade-in">
+          <div class="devpilot-docs__revision-input-wrap">
+            <lucide-icon name="sparkles" size="15" class="devpilot-docs__revision-icon"></lucide-icon>
+            <input 
+              type="text" 
+              class="devpilot-docs__revision-input" 
+              [formControl]="revisionControl"
+              placeholder="e.g. Add a section explaining environment configuration and Docker deployment..."
+              (keydown.enter)="applyRevision()"
+              [disabled]="isRevising()"
+            />
+          </div>
+
+          <div class="devpilot-docs__revision-actions">
+            <button 
+              class="devpilot-docs__primary-btn devpilot-docs__primary-btn--sm" 
+              (click)="applyRevision()"
+              [disabled]="isRevising() || !revisionControl.value.trim()"
+            >
+              <lucide-icon name="send" size="13"></lucide-icon>
+              <span>{{ isRevising() ? 'Revising with Ollama...' : 'Apply Revision' }}</span>
+            </button>
+            <button 
+              class="devpilot-docs__btn-secondary devpilot-docs__btn-secondary--sm" 
+              (click)="showRevisionBar.set(false)"
+              [disabled]="isRevising()"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Workspace Area: Editor & Rendered Preview -->
+      <div class="devpilot-docs__editor-workspace" [class.devpilot-docs__editor-workspace--split]="viewerMode() === 'split'">
+        
+        <!-- Raw Markdown Editor Panel -->
+        @if (viewerMode() === 'split' || viewerMode() === 'edit') {
+          <div class="devpilot-docs__editor-panel dp-glass">
+            <div class="devpilot-docs__panel-header">
+              <span class="devpilot-docs__panel-title">Markdown Editor</span>
+              <span class="devpilot-docs__panel-meta">{{ editableContent.value.length }} chars</span>
+            </div>
+            <textarea 
+              class="devpilot-docs__code-editor dp-scroll" 
+              [formControl]="editableContent"
+              placeholder="Enter or edit markdown content..."
+              spellcheck="false"
+            ></textarea>
+          </div>
+        }
+
+        <!-- Rendered Preview Panel -->
+        @if (viewerMode() === 'split' || viewerMode() === 'preview') {
+          <div class="devpilot-docs__preview-panel dp-glass dp-scroll">
+            <div class="devpilot-docs__panel-header">
+              <span class="devpilot-docs__panel-title">Live Preview</span>
+              <span class="devpilot-docs__panel-meta">Safe Rendered HTML</span>
+            </div>
+            <div 
+              class="devpilot-docs__preview-content" 
+              [innerHTML]="sanitizedPreviewHtml()"
+            ></div>
+          </div>
+        }
+
       </div>
+
     </div>
   }
 

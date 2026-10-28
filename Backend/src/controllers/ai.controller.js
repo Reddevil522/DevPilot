@@ -425,7 +425,16 @@ exports.rejectChanges = async (req, res, next) => {
 // @access  Private
 exports.generateDocs = async (req, res, next) => {
   try {
-    const { projectId, docType } = req.body;
+    const {
+      projectId,
+      docType = 'readme',
+      title,
+      instructions,
+      sourceContent,
+      targetPath,
+      saveToHistory = true,
+      model,
+    } = req.body;
     const userId = req.user.id || req.user._id?.toString();
 
     if (!projectId) {
@@ -440,14 +449,22 @@ exports.generateDocs = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Access denied to this project.' });
     }
 
-    const result = await AiService.generateDocumentation({
+    const DocumentService = require('../services/document.service');
+    const result = await DocumentService.generateDocument({
       project,
-      docType: docType || 'readme'
+      userId,
+      docType,
+      title,
+      instructions,
+      sourceContent,
+      targetPath,
+      saveToHistory,
+      model,
     });
 
     res.status(200).json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error) {
     next(error);

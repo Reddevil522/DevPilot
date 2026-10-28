@@ -1,6 +1,6 @@
 import { Component, signal, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { TopNavbarComponent } from '../top-navbar/top-navbar.component';
 import { ActivityBarComponent, ActivityItem } from '../activity-bar/activity-bar.component';
 
@@ -28,12 +28,25 @@ import { ProjectService } from '../../core/services/project.service';
   styleUrl: './workspace-layout.component.css'
 })
 export class WorkspaceLayoutComponent {
+  private router = inject(Router);
   readonly projectService = inject(ProjectService);
   readonly activeActivity = signal<ActivityItem>('explorer');
   readonly sidebarVisible = signal(true);
   readonly commandPaletteOpen = signal(false);
 
   onActivityChange(item: ActivityItem): void {
+    if (item === 'documentation') {
+      this.router.navigate(['/documentation']);
+      return;
+    }
+    if (item === 'deployment') {
+      this.router.navigate(['/deployments']);
+      return;
+    }
+    if (item === 'projects') {
+      this.router.navigate(['/dashboard']);
+      return;
+    }
     if (this.activeActivity() === item && this.sidebarVisible()) {
       this.sidebarVisible.set(false);
     } else {

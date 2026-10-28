@@ -12,6 +12,8 @@ const {
 } = require('../controllers/ai.controller');
 const { requireAuth } = require('../middleware/auth.middleware');
 
+const documentRoutes = require('./document.routes');
+
 const router = express.Router();
 
 // Rate limiter for AI chat requests
@@ -29,6 +31,9 @@ const aiChatLimiter = rateLimit({
 
 // All AI routes require authentication
 router.use(requireAuth);
+
+// Sub-routes for Document Generation & Management
+router.use('/docs', documentRoutes);
 
 router.post('/chat', aiChatLimiter, chat);
 router.post('/chat/stream', aiChatLimiter, chatStream);

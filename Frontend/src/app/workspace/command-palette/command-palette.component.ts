@@ -55,7 +55,8 @@ export class CommandPaletteComponent {
   execute(cmd: Command): void {
     switch (cmd.id) {
       case 'open-dashboard': this.router.navigate(['/dashboard']); break;
-      case 'open-docs': this.router.navigate(['/documentation']); break;
+      case 'open-docs':
+      case 'gen-docs': this.router.navigate(['/documentation']); break;
       case 'open-deployments': this.router.navigate(['/deployments']); break;
     }
     this.close();

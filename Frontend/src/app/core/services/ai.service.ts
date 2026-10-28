@@ -2,7 +2,16 @@ import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, of } from 'rxjs';
 import { map, catchError, finalize, delay } from 'rxjs/operators';
-import { AIMessage, AIContext, DocumentationType } from '../../shared/models/ai.model';
+import {
+  AIMessage,
+  AIContext,
+  DocumentationType,
+  DocTypeOption,
+  GenerateDocRequest,
+  ReviseDocRequest,
+  SaveDocToProjectRequest,
+  GeneratedDocument
+} from '../../shared/models/ai.model';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -315,6 +324,179 @@ export class AiService {
         return throwError(() => ({ message: errorMsg, status: error.status }));
       }),
       finalize(() => this.isThinking.set(false))
+    );
+  }
+
+  /**
+   * Retrieves supported document types and metadata options
+   */
+  getDocumentTypes(): Observable<DocTypeOption[]> {
+    return this.http.get<{ success: boolean; data: DocTypeOption[] }>(
+      `${this.apiUrl}/docs/types`,
+      { withCredentials: true }
+    ).pipe(
+      map(res => res.data || []),
+      catchError((error: HttpErrorResponse) => {
+        const errorMsg = error.error?.message || 'Failed to load document types.';
+        return throwError(() => ({ message: errorMsg, status: error.status }));
+      })
+    );
+  }
+
+  /**
+   * Generates a complete document using the real local Ollama AI model
+   */
+  generateDoc(payload: GenerateDocRequest): Observable<GeneratedDocument> {
+    this.isThinking.set(true);
+
+    return this.http.post<{ success: boolean; data: GeneratedDocument }>(
+      `${this.apiUrl}/docs/generate`,
+      payload,
+      { withCredentials: true }
+    ).pipe(
+      map(res => res.data),
+      catchError((error: HttpErrorResponse) => {
+        let errorMsg = 'Failed to generate document.';
+        if (error.status === 0) {
+          errorMsg = 'Cannot reach DevPilot backend server. Please verify your connection.';
+        } else if (error.error?.message) {
+          errorMsg = error.error.message;
+        }
+        return throwError(() => ({
+          message: errorMsg,
+          code: error.error?.code || 'GEN_ERROR',
+          status: error.status
+        }));
+      }),
+      finalize(() => this.isThinking.set(false))
+    );
+  }
+
+  /**
+   * Revises an existing document or draft using Ollama given a revision prompt
+   */
+  reviseDoc(payload: ReviseDocRequest): Observable<GeneratedDocument> {
+    this.isThinking.set(true);
+
+    return this.http.post<{ success: boolean; data: GeneratedDocument }>(
+      `${this.apiUrl}/docs/revise`,
+      payload,
+      { withCredentials: true }
+    ).pipe(
+      map(res => res.data),
+      catchError((error: HttpErrorResponse) => {
+        let errorMsg = 'Failed to revise document.';
+        if (error.error?.message) {
+          errorMsg = error.error.message;
+        }
+        return throwError(() => ({
+          message: errorMsg,
+          code: error.error?.code || 'REVISE_ERROR',
+          status: error.status
+        }));
+      }),
+      finalize(() => this.isThinking.set(false))
+    );
+  }
+
+  /**
+   * Gets document history for a project
+   */
+  getProjectDocuments(projectId: string): Observable<GeneratedDocument[]> {
+    return this.http.get<{ success: boolean; data: GeneratedDocument[] }>(
+      `${this.apiUrl}/docs/project/${projectId}`,
+      { withCredentials: true }
+    ).pipe(
+      map(res => res.data || []),
+      catchError((error: HttpErrorResponse) => {
+        const errorMsg = error.error?.message || 'Failed to load project documents.';
+        return throwError(() => ({ message: errorMsg, status: error.status }));
+      })
+    );
+  }
+
+  /**
+   * Retrieves a specific document by its ID
+   */
+  getDocument(id: string): Observable<GeneratedDocument> {
+    return this.http.get<{ success: boolean; data: GeneratedDocument }>(
+      `${this.apiUrl}/docs/${id}`,
+      { withCredentials: true }
+    ).pipe(
+      map(res => res.data),
+      catchError((error: HttpErrorResponse) => {
+        const errorMsg = error.error?.message || 'Document not found.';
+        return throwError(() => ({ message: errorMsg, status: error.status }));
+      })
+    );
+  }
+
+  /**
+   * Updates an existing document's title or content in MongoDB
+   */
+  updateDocument(id: string, payload: { title?: string; content?: string }): Observable<GeneratedDocument> {
+    return this.http.put<{ success: boolean; data: GeneratedDocument }>(
+      `${this.apiUrl}/docs/${id}`,
+      payload,
+      { withCredentials: true }
+    ).pipe(
+      map(res => res.data),
+      catchError((error: HttpErrorResponse) => {
+        const errorMsg = error.error?.message || 'Failed to update document.';
+        return throwError(() => ({ message: errorMsg, status: error.status }));
+      })
+    );
+  }
+
+  /**
+   * Deletes a document from MongoDB
+   */
+  deleteDocument(id: string): Observable<{ success: boolean; message?: string }> {
+    return this.http.delete<{ success: boolean; message?: string }>(
+      `${this.apiUrl}/docs/${id}`,
+      { withCredentials: true }
+    ).pipe(
+      catchError((error: HttpErrorResponse) => {
+        const errorMsg = error.error?.message || 'Failed to delete document.';
+        return throwError(() => ({ message: errorMsg, status: error.status }));
+      })
+    );
+  }
+
+  /**
+   * Saves a document directly to the local project workspace filesystem
+   */
+  saveDocToProject(payload: SaveDocToProjectRequest): Observable<{ success: boolean; filePath: string; message: string }> {
+    return this.http.post<{ success: boolean; filePath: string; message: string }>(
+      `${this.apiUrl}/docs/save`,
+      payload,
+      { withCredentials: true }
+    ).pipe(
+      catchError((error: HttpErrorResponse) => {
+        const errorMsg = error.error?.message || 'Failed to save document to project filesystem.';
+        return throwError(() => ({ message: errorMsg, status: error.status }));
+      })
+    );
+  }
+
+  /**
+   * Downloads a generated document as Markdown or HTML
+   */
+  exportDocument(id: string, format: 'markdown' | 'html' = 'markdown'): Observable<Blob> {
+    return this.http.get(
+      `${this.apiUrl}/docs/${id}/export?format=${format}`,
+      { responseType: 'blob', withCredentials: true }
+    );
+  }
+
+  /**
+   * Exports arbitrary document content on the fly as Markdown or HTML
+   */
+  exportContentDirect(content: string, format: 'markdown' | 'html' = 'markdown', filename?: string): Observable<Blob> {
+    return this.http.post(
+      `${this.apiUrl}/docs/export`,
+      { content, format, filename },
+      { responseType: 'blob', withCredentials: true }
     );
   }
 
