@@ -88,10 +88,18 @@
   font-weight: 600;
   cursor: pointer;
   outline: none;
+  color-scheme: dark;
 }
 .devpilot-docs__project-select option {
-  background: var(--dp-surface-strong);
-  color: var(--dp-text-primary);
+  background-color: #121524;
+  color: #f2f3f9;
+}
+:host-context([data-theme='light']) .devpilot-docs__project-select {
+  color-scheme: light;
+}
+:host-context([data-theme='light']) .devpilot-docs__project-select option {
+  background-color: #ffffff;
+  color: #14151f;
 }
 .devpilot-docs__no-projects {
   font-size: 11.5px;
@@ -623,6 +631,18 @@
   color: var(--dp-text-primary);
   font-size: 11.5px;
   outline: none;
+  color-scheme: dark;
+}
+.devpilot-docs__select option {
+  background-color: #121524;
+  color: #f2f3f9;
+}
+:host-context([data-theme='light']) .devpilot-docs__select {
+  color-scheme: light;
+}
+:host-context([data-theme='light']) .devpilot-docs__select option {
+  background-color: #ffffff;
+  color: #14151f;
 }
 .devpilot-docs__checkbox-row {
   display: flex;

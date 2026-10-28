@@ -134,6 +134,24 @@ button {
   font-family: var(--dp-font-body);
 }
 
+select {
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] select {
+  color-scheme: light;
+}
+
+select option {
+  background-color: #121524;
+  color: #f2f3f9;
+}
+
+:root[data-theme='light'] select option {
+  background-color: #ffffff;
+  color: #14151f;
+}
+
 ::selection {
   background: var(--dp-accent);
   color: #fff;
